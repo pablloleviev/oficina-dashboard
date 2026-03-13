@@ -1,0 +1,26 @@
+{
+  "servicos": [
+    {
+      "id": "7a0c",
+      "cliente": "João",
+      "servico": "Troca de óleo",
+      "valor": "120",
+      "status": "Concluído"
+    },
+    {
+      "cliente": "Maria",
+      "servico": "Escapamento",
+      "valor": "200",
+      "status": "Em andamento",
+      "id": "4d44"
+    },
+    {
+      "id": "b3c8",
+      "cliente": "Carlos",
+      "servico": "Revisão",
+      "valor": "150",
+      "status": "Aguardando"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}
