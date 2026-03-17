@@ -20,6 +20,13 @@
       "servico": "Revisão",
       "valor": "150",
       "status": "Aguardando"
+    },
+    {
+      "id": "9d43",
+      "cliente": "Mario",
+      "servico": "Escapamento",
+      "valor": "200",
+      "status": "Aguardando"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"
