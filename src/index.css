@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design System Variables ── */
+:root {
+  --bg: #0d1117;
+  --sidebar: #0f1823;
+  --card: #131d2a;
+  --card2: #162030;
+  --border: rgba(255,255,255,0.07);
+  --text: #e8edf3;
+  --muted: #5a6a7e;
+  --accent: #3b82f6;
+  --green: #22c55e;
+  --yellow: #f59e0b;
+  --red: #ef4444;
+  --cyan: #06b6d4;
+  --purple: #a78bfa;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1e2d3d; border-radius: 4px; }
+
+body {
+  @apply bg-slate-900 text-white antialiased;
+}
+
+#root {
+  @apply min-h-screen;
+}
+
+.input {
+  @apply p-3 rounded-lg bg-slate-800 border border-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition;
+}
+
+.card {
+  @apply bg-slate-800 p-6 rounded-xl shadow;
+}
+
+/* ========================= TIMELINE ========================= */
+.timeline {
+  border-left: 2px solid #334155;
+  padding-left: 16px;
+  margin-top: 10px;
+}
+
+.timeline-item {
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.timeline-item::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background: #38bdf8;
+  border-radius: 50%;
+  position: absolute;
+  left: -5px;
+  top: 5px;
+}
+
+.timeline-date {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.timeline-content {
+  background: #1e293b;
+  padding: 8px;
+  border-radius: 6px;
+}
