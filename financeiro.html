@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoFlow — Financeiro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d1117;
+      --sidebar: #0f1823;
+      --card: #131d2a;
+      --card2: #162030;
+      --border: rgba(255,255,255,0.07);
+      --text: #e8edf3;
+      --muted: #5a6a7e;
+      --accent: #3b82f6;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --cyan: #06b6d4;
+      --purple: #a78bfa;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #1e2d3d; border-radius: 4px; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 200px; min-width: 200px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 24px 16px;
+      position: fixed; top: 0; left: 0; bottom: 0;
+      z-index: 10;
+    }
+    .sidebar-logo h1 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
+    .sidebar-logo p { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+    .sidebar-section { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin: 24px 0 10px; padding-left: 4px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: 8px; font-size: 13px;
+      color: var(--muted); cursor: pointer; transition: all 0.15s;
+      text-decoration: none; margin-bottom: 2px; border-left: 2px solid transparent;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+    .nav-item.active { color: var(--text); background: rgba(59,130,246,0.08); border-left: 2px solid var(--accent); }
+    .sidebar-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }
+    .sidebar-user { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .avatar-sm {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .sidebar-user-info p { font-size: 12px; font-weight: 500; color: var(--text); }
+    .sidebar-user-info span { font-size: 10px; color: var(--muted); }
+    .btn-sair { font-size: 12px; color: var(--red); background: none; border: none; cursor: pointer; padding: 0; font-family: 'DM Sans', sans-serif; }
+
+    /* ── MAIN ── */
+    .main { margin-left: 200px; flex: 1; padding: 28px 32px; overflow-y: auto; }
+
+    /* ── TOPBAR ── */
+    .topbar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+    .topbar h2 { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; color: #fff; }
+    .topbar p { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+    /* PERIOD TABS */
+    .period-tabs {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 9px; padding: 3px;
+      display: flex; gap: 2px;
+    }
+    .period-tab {
+      padding: 6px 14px; border-radius: 7px;
+      font-size: 12px; font-weight: 400; color: var(--muted);
+      cursor: pointer; border: none; background: none;
+      font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+    }
+    .period-tab.active { background: var(--accent); color: #fff; font-weight: 600; }
+    .period-tab:hover:not(.active) { background: rgba(255,255,255,0.05); color: var(--text); }
+
+    /* ── SUMMARY CARDS ── */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .sum-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 20px 16px;
+      position: relative;
+    }
+    .sum-card.highlight {
+      background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(6,182,212,0.08));
+      border-color: rgba(34,197,94,0.25);
+    }
+    .sum-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+    .sum-value {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; line-height: 1;
+    }
+    .sum-value.big { font-size: 28px; }
+    .sum-value.md { font-size: 22px; }
+    .sum-value.green { color: var(--green); }
+    .sum-value.yellow { color: var(--yellow); }
+    .sum-value.blue { color: var(--accent); }
+    .sum-value.red { color: var(--red); }
+    .sum-badge {
+      position: absolute; top: 16px; right: 16px;
+      font-size: 11px; font-weight: 600;
+      padding: 3px 8px; border-radius: 20px;
+    }
+    .badge-up { background: rgba(34,197,94,0.12); color: var(--green); }
+    .badge-down { background: rgba(239,68,68,0.12); color: var(--red); }
+
+    /* ── CENTER GRID ── */
+    .center-grid {
+      display: grid;
+      grid-template-columns: 1.8fr 1fr;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .chart-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+    }
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px; font-weight: 700; color: var(--text);
+      margin-bottom: 4px;
+    }
+    .card-subtitle { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
+
+    /* BAR CHART */
+    .bar-chart { height: 140px; display: flex; align-items: flex-end; gap: 20px; padding: 0 4px; }
+    .bar-group { display: flex; align-items: flex-end; gap: 4px; flex: 1; }
+    .bar {
+      flex: 1; border-radius: 4px 4px 0 0;
+      transition: opacity 0.15s;
+    }
+    .bar:hover { opacity: 0.8; }
+    .bar-labels { display: flex; justify-content: space-around; margin-top: 8px; }
+    .bar-label { font-size: 11px; color: var(--muted); text-align: center; flex: 1; }
+    .chart-legend { display: flex; gap: 16px; margin-top: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+    /* SERVICE BREAKDOWN */
+    .breakdown-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+    }
+    .breakdown-row { margin-bottom: 16px; }
+    .breakdown-row:last-child { margin-bottom: 0; }
+    .breakdown-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .breakdown-name { font-size: 12px; font-weight: 500; color: var(--text); }
+    .breakdown-value { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; }
+    .breakdown-pct { font-size: 10px; color: var(--muted); margin-left: 4px; }
+    .breakdown-bar { height: 5px; background: #1e2d3d; border-radius: 3px; overflow: hidden; }
+    .breakdown-fill { height: 100%; border-radius: 3px; }
+
+    /* ── TRANSACTIONS ── */
+    .trans-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .trans-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .btn-export {
+      background: var(--card2); border: 1px solid var(--border);
+      border-radius: 7px; padding: 6px 12px; font-size: 12px;
+      color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif;
+      transition: background 0.15s;
+    }
+    .btn-export:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+    .trans-table-header {
+      display: grid;
+      grid-template-columns: 0.5fr 2fr 1.5fr 1fr 1fr 1fr;
+      padding: 10px 20px;
+      background: var(--card2);
+      gap: 12px;
+    }
+    .th { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 500; }
+    .trans-row {
+      display: grid;
+      grid-template-columns: 0.5fr 2fr 1.5fr 1fr 1fr 1fr;
+      padding: 12px 20px;
+      gap: 12px;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .trans-row:hover { background: rgba(255,255,255,0.02); }
+    .type-icon {
+      width: 28px; height: 28px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; flex-shrink: 0;
+    }
+    .type-entrada { background: rgba(34,197,94,0.12); color: var(--green); }
+    .type-saida { background: rgba(239,68,68,0.12); color: var(--red); }
+    .type-pendente { background: rgba(245,158,11,0.12); color: var(--yellow); }
+    .td { font-size: 12px; color: var(--text); }
+    .td-desc { font-size: 12px; font-weight: 500; color: var(--text); }
+    .td-muted { font-size: 11px; color: var(--muted); }
+    .td-pos { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--green); }
+    .td-neg { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--red); }
+    .td-pend { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--yellow); }
+    .status-pill {
+      display: inline-flex; align-items: center;
+      font-size: 11px; font-weight: 500; padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .pill-green { background: rgba(34,197,94,0.12); color: var(--green); }
+    .pill-yellow { background: rgba(245,158,11,0.12); color: var(--yellow); }
+    .pill-red { background: rgba(239,68,68,0.12); color: var(--red); }
+  </style>
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>AutoFlow</h1>
+      <p>Gestão de Serviços</p>
+    </div>
+    <div class="sidebar-section">Menu</div>
+    <nav>
+      <a href="dashboard.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a href="clientes.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Clientes
+      </a>
+      <a href="ordens.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Ordens
+      </a>
+      <a href="financeiro.html" class="nav-item active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Financeiro
+      </a>
+      <a href="relatorios.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Relatórios
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar-sm">AD</div>
+        <div class="sidebar-user-info">
+          <p>Admin</p>
+          <span>Administrador</span>
+        </div>
+      </div>
+      <button class="btn-sair">Sair</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div>
+        <h2>Financeiro</h2>
+        <p>Entradas, saídas e controle de caixa</p>
+      </div>
+      <div class="period-tabs">
+        <button class="period-tab" onclick="setPeriod(this,'7d')">7 dias</button>
+        <button class="period-tab active" onclick="setPeriod(this,'mes')">Este mês</button>
+        <button class="period-tab" onclick="setPeriod(this,'3m')">3 meses</button>
+        <button class="period-tab" onclick="setPeriod(this,'ano')">Ano</button>
+      </div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="summary-grid">
+      <div class="sum-card highlight">
+        <span class="sum-badge badge-up">↑ 24%</span>
+        <div class="sum-label">Lucro Líquido</div>
+        <div class="sum-value big green">R$ 1.850,00</div>
+      </div>
+      <div class="sum-card">
+        <span class="sum-badge badge-down">↓ 18%</span>
+        <div class="sum-label">Receita Bruta</div>
+        <div class="sum-value md blue">R$ 2.450,00</div>
+      </div>
+      <div class="sum-card">
+        <span class="sum-badge badge-up" style="background:rgba(245,158,11,0.1);color:var(--yellow)">2 ordens</span>
+        <div class="sum-label">A Receber</div>
+        <div class="sum-value md yellow">R$ 150,00</div>
+      </div>
+      <div class="sum-card">
+        <span class="sum-badge badge-down">↓ 5%</span>
+        <div class="sum-label">Despesas</div>
+        <div class="sum-value md red">R$ 600,00</div>
+      </div>
+    </div>
+
+    <!-- CENTER GRID -->
+    <div class="center-grid">
+
+      <!-- BAR CHART -->
+      <div class="chart-card">
+        <div class="card-title">Receita x Despesas</div>
+        <div class="card-subtitle">Comparativo mensal por semana</div>
+        <div class="bar-chart" id="bar-chart"></div>
+        <div class="bar-labels">
+          <span class="bar-label">S1</span>
+          <span class="bar-label">S2</span>
+          <span class="bar-label">S3</span>
+          <span class="bar-label">S4</span>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(59,130,246,0.7)"></div> Receita</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(239,68,68,0.5)"></div> Despesas</div>
+        </div>
+      </div>
+
+      <!-- BREAKDOWN -->
+      <div class="breakdown-card">
+        <div class="card-title">Por Serviço</div>
+        <div class="card-subtitle" style="margin-bottom:18px">Receita por categoria</div>
+        <div id="breakdown"></div>
+      </div>
+
+    </div>
+
+    <!-- TRANSACTIONS -->
+    <div class="trans-card">
+      <div class="trans-header">
+        <div>
+          <div class="card-title">Histórico de Transações</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Últimas movimentações</div>
+        </div>
+        <button class="btn-export">Exportar CSV</button>
+      </div>
+      <div class="trans-table-header">
+        <div class="th">Tipo</div>
+        <div class="th">Descrição</div>
+        <div class="th">Cliente</div>
+        <div class="th">Data</div>
+        <div class="th">Valor</div>
+        <div class="th">Status</div>
+      </div>
+      <div id="trans-body"></div>
+    </div>
+
+  </main>
+
+  <script>
+    function setPeriod(btn, key) {
+      document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+    }
+
+    // BAR CHART
+    const barData = [
+      { receita: 520, despesa: 140 },
+      { receita: 680, despesa: 200 },
+      { receita: 590, despesa: 160 },
+      { receita: 660, despesa: 100 },
+    ]
+    const maxBar = Math.max(...barData.map(d => Math.max(d.receita, d.despesa)))
+    document.getElementById('bar-chart').innerHTML = barData.map(d => `
+      <div class="bar-group">
+        <div class="bar" style="background:rgba(59,130,246,0.7);height:${(d.receita/maxBar)*100}%" title="R$ ${d.receita}"></div>
+        <div class="bar" style="background:rgba(239,68,68,0.5);height:${(d.despesa/maxBar)*100}%" title="R$ ${d.despesa}"></div>
+      </div>
+    `).join('')
+
+    // BREAKDOWN
+    const breakdown = [
+      { nome:'Troca de Óleo', valor:750, pct:30.6, cor:'var(--green)' },
+      { nome:'Manutenção Geral', valor:620, pct:25.3, cor:'var(--accent)' },
+      { nome:'Pneus', valor:480, pct:19.6, cor:'var(--yellow)' },
+      { nome:'Freios', valor:350, pct:14.3, cor:'var(--cyan)' },
+      { nome:'Outros', valor:250, pct:10.2, cor:'var(--purple)' },
+    ]
+    document.getElementById('breakdown').innerHTML = breakdown.map(b => `
+      <div class="breakdown-row">
+        <div class="breakdown-header">
+          <span class="breakdown-name">${b.nome}</span>
+          <div>
+            <span class="breakdown-value" style="color:${b.cor}">R$ ${b.valor.toLocaleString('pt-BR')},00</span>
+            <span class="breakdown-pct">${b.pct}%</span>
+          </div>
+        </div>
+        <div class="breakdown-bar">
+          <div class="breakdown-fill" style="width:${b.pct / 30.6 * 100}%;background:${b.cor}"></div>
+        </div>
+      </div>
+    `).join('')
+
+    // TRANSACTIONS
+    const transacoes = [
+      { tipo:'entrada', desc:'Troca de Óleo', cliente:'João Oliveira', data:'10/04/2025', valor:'+R$ 150,00', status:'Recebido', stClass:'pill-green' },
+      { tipo:'pendente', desc:'Manutenção Preventiva', cliente:'Carlos Silva', data:'09/04/2025', valor:'R$ 50,00', status:'Pendente', stClass:'pill-yellow' },
+      { tipo:'entrada', desc:'Alinhamento e Balanceamento', cliente:'Roberto Ferreira', data:'07/04/2025', valor:'+R$ 120,00', status:'Recebido', stClass:'pill-green' },
+      { tipo:'saida', desc:'Compra de Peças', cliente:'Fornecedor', data:'05/04/2025', valor:'-R$ 220,00', status:'Pago', stClass:'pill-green' },
+      { tipo:'entrada', desc:'Troca de Pneus', cliente:'Maria Alves', data:'03/04/2025', valor:'+R$ 350,00', status:'Recebido', stClass:'pill-green' },
+      { tipo:'saida', desc:'Aluguel da Oficina', cliente:'—', data:'01/04/2025', valor:'-R$ 380,00', status:'Pago', stClass:'pill-green' },
+    ]
+    const typeIcons = { entrada:'↑', saida:'↓', pendente:'⏳' }
+    const typeClass = { entrada:'type-entrada', saida:'type-saida', pendente:'type-pendente' }
+    const valueClass = { entrada:'td-pos', saida:'td-neg', pendente:'td-pend' }
+
+    document.getElementById('trans-body').innerHTML = transacoes.map(t => `
+      <div class="trans-row">
+        <div><div class="type-icon ${typeClass[t.tipo]}">${typeIcons[t.tipo]}</div></div>
+        <div class="td-desc">${t.desc}</div>
+        <div class="td">${t.cliente}</div>
+        <div class="td td-muted">${t.data}</div>
+        <div class="${valueClass[t.tipo]}">${t.valor}</div>
+        <div><span class="status-pill ${t.stClass}">${t.status}</span></div>
+      </div>
+    `).join('')
+  </script>
+</body>
+</html>

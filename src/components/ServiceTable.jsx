@@ -1,127 +1,144 @@
-function ServiceTable({ servicos = [], onDelete, onEdit, onOrdenar }) {
+function ServiceTable({ servicos = [], onDelete, onEdit }) {
 
-if (servicos.length === 0) {
-return <p style={{color:"white"}}>Nenhum serviço encontrado.</p>
-}
+  // =========================
+  // VALIDAÇÃO
+  // =========================
+  if (!Array.isArray(servicos) || servicos.length === 0) {
+    return (
+      <div className="bg-slate-800 p-6 rounded-xl text-center text-slate-400">
+        Nenhum registro encontrado.
+      </div>
+    )
+  }
 
-return (
+  // =========================
+  // NORMALIZA STATUS (ENUM + STRING)
+  // =========================
+  function formatStatus(status) {
+    if (status === null || status === undefined) return "—"
 
-<div style={{overflowX:"auto"}}>
+    if (typeof status === "number") {
+      const map = {
+        0: "Pendente",
+        1: "Em andamento",
+        2: "Finalizado",
+        3: "Entregue"
+      }
+      return map[status] || "—"
+    }
 
-<table style={tableStyle}>
+    const s = String(status).toLowerCase()
 
-<thead>
+    if (s.includes("pendente")) return "Pendente"
+    if (s.includes("andamento")) return "Em andamento"
+    if (s.includes("finalizado")) return "Finalizado"
+    if (s.includes("entregue")) return "Entregue"
 
-<tr style={{background:"#334155"}}>
+    return status
+  }
 
-<th style={th} onClick={()=>onOrdenar("cliente")}>
-Cliente
-</th>
+  // =========================
+  // COR DO STATUS
+  // =========================
+  function getStatusColor(status) {
+    const s = formatStatus(status)
 
-<th style={th} onClick={()=>onOrdenar("servico")}>
-Serviço
-</th>
+    if (s === "Finalizado" || s === "Entregue") return "bg-green-500/20 text-green-400"
+    if (s === "Em andamento") return "bg-yellow-500/20 text-yellow-400"
+    if (s === "Pendente") return "bg-red-500/20 text-red-400"
 
-<th style={th} onClick={()=>onOrdenar("valor")}>
-Valor
-</th>
+    return "bg-slate-600 text-white"
+  }
 
-<th style={th} onClick={()=>onOrdenar("status")}>
-Status
-</th>
+  // =========================
+  return (
+    <div className="bg-slate-800 p-6 rounded-xl overflow-x-auto">
 
-<th style={th}>
-Ações
-</th>
+      <table className="w-full text-sm">
 
-</tr>
+        <thead className="text-slate-400 text-xs uppercase border-b border-slate-700">
+          <tr>
+            <th className="p-3 text-left">Cliente</th>
+            <th className="p-3 text-left">Veículo</th>
+            <th className="p-3 text-left">Serviço</th>
+            <th className="p-3 text-left">Valor</th>
+            <th className="p-3 text-left">Status</th>
+            <th className="p-3 text-center">Ações</th>
+          </tr>
+        </thead>
 
-</thead>
+        <tbody>
 
-<tbody>
+          {servicos.map((s) => (
 
-{servicos.map((servico) => (
+            <tr key={s.id} className="border-b border-slate-700 hover:bg-slate-700/40 transition">
 
-<tr key={servico.id} style={{textAlign:"center"}}>
+              {/* CLIENTE + TELEFONE */}
+              <td className="p-3">
+                <div className="font-semibold">{s.cliente || "—"}</div>
+                <div className="text-xs text-slate-400">
+                  {s.telefone || ""}
+                </div>
+              </td>
 
-<td style={td}>{servico.cliente}</td>
+              {/* VEÍCULO + PLACA */}
+              <td className="p-3">
+                <div>{s.veiculo || "—"}</div>
+                <div className="text-xs text-slate-400">
+                  {s.placa || ""}
+                </div>
+              </td>
 
-<td style={td}>{servico.servico}</td>
+              {/* SERVIÇO */}
+              <td className="p-3">
+                {s.servico || "—"}
+              </td>
 
-<td style={td}>R$ {servico.valor}</td>
+              {/* VALOR */}
+              <td className="p-3 font-semibold">
+                R$ {Number(s.valor || 0).toFixed(2)}
+              </td>
 
-<td style={td}>{servico.status}</td>
+              {/* STATUS COM BADGE */}
+              <td className="p-3">
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(s.status)}`}>
+                  {formatStatus(s.status)}
+                </span>
+              </td>
 
-<td style={td}>
+              {/* AÇÕES */}
+              <td className="p-3">
 
-<button
-onClick={() => onEdit(servico)}
-style={btnEditar}
->
-Editar
-</button>
+                <div className="flex justify-center gap-2">
 
-<button
-onClick={() => onDelete(servico.id)}
-style={btnExcluir}
->
-Excluir
-</button>
+                  <button
+                    onClick={() => onEdit(s)}
+                    className="bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded-lg text-xs font-semibold transition"
+                  >
+                    Editar
+                  </button>
 
-</td>
+                  <button
+                    onClick={() => onDelete(s.id)}
+                    className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded-lg text-xs font-semibold transition"
+                  >
+                    Excluir
+                  </button>
 
-</tr>
+                </div>
 
-))}
+              </td>
 
-</tbody>
+            </tr>
 
-</table>
+          ))}
 
-</div>
+        </tbody>
 
-)
+      </table>
 
-}
-
-const tableStyle = {
-width: "100%",
-borderCollapse: "collapse",
-background: "#1e293b",
-borderRadius: "10px",
-overflow: "hidden",
-boxShadow: "0 4px 20px rgba(0,0,0,0.4)"
-}
-
-const th = {
-padding: "14px",
-color: "white",
-cursor: "pointer",
-fontWeight: "600"
-}
-
-const td = {
-padding: "12px",
-color: "#e2e8f0"
-}
-
-const btnEditar = {
-background:"#3b82f6",
-border:"none",
-padding:"6px 12px",
-marginRight:"6px",
-borderRadius:"6px",
-color:"white",
-cursor:"pointer"
-}
-
-const btnExcluir = {
-background:"#ef4444",
-border:"none",
-padding:"6px 12px",
-borderRadius:"6px",
-color:"white",
-cursor:"pointer"
+    </div>
+  )
 }
 
 export default ServiceTable
