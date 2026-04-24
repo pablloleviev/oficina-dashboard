@@ -48,7 +48,6 @@ string? GetConnectionString()
     if (string.IsNullOrEmpty(rawUrl))
         return builder.Configuration.GetConnectionString("DefaultConnection");
 
-    // Se for uma URI (comum no Render/Heroku), converte para Connection String
     if (rawUrl.Contains("://"))
     {
         try
@@ -58,11 +57,12 @@ string? GetConnectionString()
             var user = userInfo[0];
             var password = userInfo.Length > 1 ? userInfo[1] : "";
             var host = uri.Host;
-            var port = uri.Port;
             var database = uri.AbsolutePath.TrimStart('/');
+            
+            // FIX: Se a porta for -1 (não informada), não incluímos na string ou usamos padrão
+            var portPart = uri.Port != -1 ? $";Port={uri.Port}" : "";
 
-            // Retorna formato padrão para SQL Server ou MySQL (ajustado pelo UseMySql/UseSqlServer abaixo)
-            return $"Server={host};Port={port};Database={database};Uid={user};Pwd={password};TrustServerCertificate=True;SSL Mode=Required";
+            return $"Server={host}{portPart};Database={database};Uid={user};Pwd={password};TrustServerCertificate=True;SSL Mode=Required";
         }
         catch { return rawUrl; }
     }
@@ -74,13 +74,17 @@ var connectionString = GetConnectionString();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    // Tenta detectar se deve usar MySQL ou SQL Server baseado no provider ou na string
-    if (connectionString != null && (connectionString.Contains("Port=3306") || connectionString.Contains("Uid=")))
+    // Heurística para decidir o provedor
+    bool isMySql = connectionString != null && (connectionString.Contains("Uid=") || connectionString.Contains("Port=3306"));
+
+    if (isMySql)
     {
-        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+        Console.WriteLine("📂 DATABASE: Usando provedor MySQL (Pomelo)");
+        options.UseMySql(connectionString!, ServerVersion.AutoDetect(connectionString));
     }
     else
     {
+        Console.WriteLine("📂 DATABASE: Usando provedor SQL Server");
         options.UseSqlServer(connectionString);
     }
 });
