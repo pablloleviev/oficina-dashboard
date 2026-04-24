@@ -1,59 +1,73 @@
-function ServiceCard({ cliente, servico, valor, status, onDelete, onEdit }) {
+import { useState } from "react";
+import Timeline from "./Timeline";
 
-return (
+function ServiceCard({
+  ordem,
+  onDelete,
+  onEdit,
+  onFaturar,
+  onDesfaturar,
+}) {
+  const [showTimeline, setShowTimeline] = useState(false);
 
-<div style={{
-border:"1px solid #ccc",
-padding:"15px",
-margin:"10px",
-borderRadius:"8px",
-backgroundColor:"#f9f9f9",
-width:"250px"
-}}>
+  return (
+    <div className="card w-[250px]">
+      <h3 className="font-bold text-lg">{ordem.cliente}</h3>
 
-<h3>Cliente: {cliente}</h3>
+      <p className="text-sm text-slate-300">{ordem.servico}</p>
 
-<p>Serviço: {servico}</p>
+      <p className="text-green-400 font-semibold">
+        R$ {ordem.valor}
+      </p>
 
-<p>Valor: R$ {valor}</p>
+      <p className="text-xs text-slate-400">{ordem.status}</p>
 
-<p>Status: {status}</p>
+      <div className="flex gap-2 mt-3 flex-wrap">
+        <button
+          onClick={onDelete}
+          className="bg-red-500 px-2 py-1 rounded text-xs"
+        >
+          Excluir
+        </button>
 
-<button
-onClick={onDelete}
-style={{
-marginTop:"10px",
-backgroundColor:"#ff4d4d",
-color:"white",
-border:"none",
-padding:"8px",
-cursor:"pointer",
-borderRadius:"5px"
-}}
->
-Excluir
-</button>
+        <button
+          onClick={onEdit}
+          className="bg-blue-500 px-2 py-1 rounded text-xs"
+        >
+          Editar
+        </button>
 
-<button
-onClick={onEdit}
-style={{
-marginTop:"10px",
-marginLeft:"10px",
-backgroundColor:"#3498db",
-color:"white",
-border:"none",
-padding:"8px",
-cursor:"pointer",
-borderRadius:"5px"
-}}
->
-Editar
-</button>
+        {!ordem.faturado && (
+          <button
+            onClick={onFaturar}
+            className="bg-green-600 px-2 py-1 rounded text-xs"
+          >
+            Faturar
+          </button>
+        )}
 
-</div>
+        {ordem.faturado && (
+          <button
+            onClick={onDesfaturar}
+            className="bg-yellow-500 px-2 py-1 rounded text-xs"
+          >
+            Desfaturar
+          </button>
+        )}
 
-)
+        <button
+          onClick={() => setShowTimeline(!showTimeline)}
+          className="bg-slate-600 px-2 py-1 rounded text-xs"
+        >
+          Histórico
+        </button>
+      </div>
 
+      {showTimeline && (
+        <Timeline ordemId={ordem.id} />
+      )}
+    </div>
+  );
 }
 
-export default ServiceCard
+export default ServiceCard;
