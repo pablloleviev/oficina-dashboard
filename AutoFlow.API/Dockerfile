@@ -2,14 +2,15 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# No contexto da subpasta AutoFlow.API, o csproj está na raiz (.)
-COPY ["AutoFlow.API.csproj", "./"]
-RUN dotnet restore "AutoFlow.API.csproj"
+# Copia o csproj usando o caminho relativo à raiz do repositório
+COPY ["AutoFlow.API/AutoFlow.API.csproj", "AutoFlow.API/"]
+RUN dotnet restore "AutoFlow.API/AutoFlow.API.csproj"
 
-# Copia o restante dos arquivos (dentro da subpasta)
-COPY . .
+# Copia o restante dos arquivos da pasta backend
+COPY ["AutoFlow.API/", "AutoFlow.API/"]
 
-# Build e Publish
+# Muda para a pasta do projeto para buildar
+WORKDIR "/src/AutoFlow.API"
 RUN dotnet publish "AutoFlow.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # Stage 2: Runtime
@@ -17,7 +18,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 
-# .NET 8/9 usa a porta 8080 por padrão
+# .NET 8/9 usa a porta 8080 por padrão em containers
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
