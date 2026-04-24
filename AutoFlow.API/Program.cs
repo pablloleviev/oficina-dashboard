@@ -22,17 +22,14 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
     });
 
-// ========================= CORS (PRODUÇÃO + DESENVOLVIMENTO) =========================
+// ========================= CORS =========================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AutoFlowCors", policy =>
     {
-        policy.WithOrigins(
-                "https://autoflow-gestao.vercel.app"  // Produção (Vercel)
-            )
+        policy.WithOrigins("https://autoflow-gestao.vercel.app")
             .SetIsOriginAllowed(origin =>
             {
-                // Em desenvolvimento, aceita qualquer porta do localhost
                 var uri = new Uri(origin);
                 return uri.Host == "localhost" || uri.Host == "127.0.0.1";
             })
@@ -42,15 +39,51 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ========================= DATABASE (ENV VAR COM FALLBACK) =========================
-// Prioridade: ENV VAR > appsettings.json
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
-                    ?? Environment.GetEnvironmentVariable("CONNECTION_STRING")
-                    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+// ========================= DATABASE (SUPORTE A URI DO RENDER) =========================
+string? GetConnectionString()
+{
+    var rawUrl = Environment.GetEnvironmentVariable("DATABASE_URL") 
+              ?? Environment.GetEnvironmentVariable("CONNECTION_STRING");
+
+    if (string.IsNullOrEmpty(rawUrl))
+        return builder.Configuration.GetConnectionString("DefaultConnection");
+
+    // Se for uma URI (comum no Render/Heroku), converte para Connection String
+    if (rawUrl.Contains("://"))
+    {
+        try
+        {
+            var uri = new Uri(rawUrl);
+            var userInfo = uri.UserInfo.Split(':');
+            var user = userInfo[0];
+            var password = userInfo.Length > 1 ? userInfo[1] : "";
+            var host = uri.Host;
+            var port = uri.Port;
+            var database = uri.AbsolutePath.TrimStart('/');
+
+            // Retorna formato padrão para SQL Server ou MySQL (ajustado pelo UseMySql/UseSqlServer abaixo)
+            return $"Server={host};Port={port};Database={database};Uid={user};Pwd={password};TrustServerCertificate=True;SSL Mode=Required";
+        }
+        catch { return rawUrl; }
+    }
+
+    return rawUrl;
+}
+
+var connectionString = GetConnectionString();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString)
-);
+{
+    // Tenta detectar se deve usar MySQL ou SQL Server baseado no provider ou na string
+    if (connectionString != null && (connectionString.Contains("Port=3306") || connectionString.Contains("Uid=")))
+    {
+        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+    }
+    else
+    {
+        options.UseSqlServer(connectionString);
+    }
+});
 
 // ========================= SERVICES =========================
 builder.Services.AddScoped<ServicoService>();
@@ -78,7 +111,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     };
 });
 
-// ========================= JWT (ENV VAR COM FALLBACK) =========================
+// ========================= JWT =========================
 var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
           ?? builder.Configuration["Jwt:Key"];
 
@@ -137,7 +170,7 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
-// ========================= SWAGGER (SEMPRE ATIVO) =========================
+// ========================= SWAGGER =========================
 app.UseSwagger();
 app.UseSwaggerUI();
 
@@ -158,7 +191,7 @@ using (var scope = app.Services.CreateScope())
     {
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         
-        // Aplica migrations pendentes automaticamente (banco sobe vazio no Render)
+        // Aplica migrations pendentes automaticamente
         await context.Database.MigrateAsync();
         Console.WriteLine("✅ MIGRATIONS APLICADAS COM SUCESSO.");
 
