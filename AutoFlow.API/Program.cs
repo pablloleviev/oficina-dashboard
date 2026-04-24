@@ -59,10 +59,10 @@ string? GetConnectionString()
             var host = uri.Host;
             var database = uri.AbsolutePath.TrimStart('/');
             
-            // FIX: Se a porta for -1 (não informada), não incluímos na string ou usamos padrão
             var portPart = uri.Port != -1 ? $";Port={uri.Port}" : "";
 
-            return $"Server={host}{portPart};Database={database};Uid={user};Pwd={password};TrustServerCertificate=True;SSL Mode=Required";
+            // String base sem opções específicas de provider ainda
+            return $"Server={host}{portPart};Database={database};Uid={user};Pwd={password}";
         }
         catch { return rawUrl; }
     }
@@ -70,22 +70,25 @@ string? GetConnectionString()
     return rawUrl;
 }
 
-var connectionString = GetConnectionString();
+var baseConnString = GetConnectionString();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    // Heurística para decidir o provedor
-    bool isMySql = connectionString != null && (connectionString.Contains("Uid=") || connectionString.Contains("Port=3306"));
+    bool isMySql = baseConnString != null && (baseConnString.Contains("Uid=") || baseConnString.Contains("Port=3306") || baseConnString.Contains("mysql"));
 
     if (isMySql)
     {
+        // Para MySQL: Removemos TrustServerCertificate e usamos SslMode compatível
+        var mysqlConnString = $"{baseConnString};SslMode=Required;AllowPublicKeyRetrieval=True";
         Console.WriteLine("📂 DATABASE: Usando provedor MySQL (Pomelo)");
-        options.UseMySql(connectionString!, ServerVersion.AutoDetect(connectionString));
+        options.UseMySql(mysqlConnString, ServerVersion.AutoDetect(mysqlConnString));
     }
     else
     {
+        // Para SQL Server: Mantemos o TrustServerCertificate
+        var sqlServerConnString = $"{baseConnString};TrustServerCertificate=True";
         Console.WriteLine("📂 DATABASE: Usando provedor SQL Server");
-        options.UseSqlServer(connectionString);
+        options.UseSqlServer(sqlServerConnString);
     }
 });
 
@@ -195,7 +198,6 @@ using (var scope = app.Services.CreateScope())
     {
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         
-        // Aplica migrations pendentes automaticamente
         await context.Database.MigrateAsync();
         Console.WriteLine("✅ MIGRATIONS APLICADAS COM SUCESSO.");
 
