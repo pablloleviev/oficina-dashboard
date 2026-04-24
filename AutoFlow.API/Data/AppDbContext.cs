@@ -84,11 +84,11 @@ namespace AutoFlow.API.Data
             // ========================= DATAS PADRÕES =========================
             modelBuilder.Entity<OrdemServico>()
                 .Property(p => p.DataCriacao)
-                .HasDefaultValueSql("GETUTCDATE()");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             modelBuilder.Entity<OrdemServico>()
                 .Property(p => p.DataEntrada)
-                .HasDefaultValueSql("GETUTCDATE()");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             // ========================= LOG DE AÇÕES =========================
             modelBuilder.Entity<LogAcao>(entity =>
@@ -100,7 +100,7 @@ namespace AutoFlow.API.Data
                     .HasMaxLength(50);
 
                 entity.Property(x => x.Data)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 // Relacionamento opcional com OrdemServico
                 entity.HasOne<OrdemServico>()
@@ -129,7 +129,7 @@ namespace AutoFlow.API.Data
                     .HasMaxLength(18);
 
                 entity.Property(x => x.CriadoEm)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(x => x.IsActive)
                     .HasDefaultValue(true);

@@ -74,22 +74,8 @@ var baseConnString = GetConnectionString();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    bool isMySql = baseConnString != null && (baseConnString.Contains("Uid=") || baseConnString.Contains("Port=3306") || baseConnString.Contains("mysql"));
-
-    if (isMySql)
-    {
-        // Para MySQL: Removemos TrustServerCertificate e usamos SslMode compatível
-        var mysqlConnString = $"{baseConnString};SslMode=Required;AllowPublicKeyRetrieval=True";
-        Console.WriteLine("📂 DATABASE: Usando provedor MySQL (Pomelo)");
-        options.UseMySql(mysqlConnString, ServerVersion.AutoDetect(mysqlConnString));
-    }
-    else
-    {
-        // Para SQL Server: Mantemos o TrustServerCertificate
-        var sqlServerConnString = $"{baseConnString};TrustServerCertificate=True";
-        Console.WriteLine("📂 DATABASE: Usando provedor SQL Server");
-        options.UseSqlServer(sqlServerConnString);
-    }
+    Console.WriteLine("📂 DATABASE: Forçando uso do SQLite (Modo Apresentação Segura)");
+    options.UseSqlite("Data Source=autoflow.db");
 });
 
 // ========================= SERVICES =========================
@@ -197,9 +183,9 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        
-        await context.Database.MigrateAsync();
-        Console.WriteLine("✅ MIGRATIONS APLICADAS COM SUCESSO.");
+        // Aplica criação direta do SQLite (ignora migrations de outros bancos)
+        await context.Database.EnsureCreatedAsync();
+        Console.WriteLine("✅ BANCO DE DADOS CRIADO COM SUCESSO (SQLite).");
 
         var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
         await authService.GarantirAdminPadrao();
