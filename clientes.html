@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoFlow — Clientes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d1117;
+      --sidebar: #0f1823;
+      --card: #131d2a;
+      --card2: #162030;
+      --border: rgba(255,255,255,0.07);
+      --text: #e8edf3;
+      --muted: #5a6a7e;
+      --accent: #3b82f6;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --cyan: #06b6d4;
+      --purple: #a78bfa;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #1e2d3d; border-radius: 4px; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 200px;
+      min-width: 200px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 16px;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 10;
+    }
+
+    .sidebar-logo { margin-bottom: 4px; }
+    .sidebar-logo h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .sidebar-logo p {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 2px;
+    }
+
+    .sidebar-section {
+      font-size: 9px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin: 24px 0 10px;
+      padding-left: 4px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+      margin-bottom: 2px;
+      border-left: 2px solid transparent;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+    .nav-item.active {
+      color: var(--text);
+      background: rgba(59,130,246,0.08);
+      border-left: 2px solid var(--accent);
+    }
+    .nav-item svg { flex-shrink: 0; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .sidebar-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .avatar-sm {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .sidebar-user-info p { font-size: 12px; font-weight: 500; color: var(--text); }
+    .sidebar-user-info span { font-size: 10px; color: var(--muted); }
+    .btn-sair {
+      font-size: 12px; color: var(--red);
+      background: none; border: none; cursor: pointer;
+      padding: 0; font-family: 'DM Sans', sans-serif;
+      transition: opacity 0.15s;
+    }
+    .btn-sair:hover { opacity: 0.7; }
+
+    /* ── MAIN ── */
+    .main {
+      margin-left: 200px;
+      flex: 1;
+      padding: 28px 32px;
+      overflow-y: auto;
+      display: flex;
+      gap: 24px;
+    }
+
+    .content { flex: 1; min-width: 0; }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .topbar h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .topbar p { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: opacity 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+
+    /* ── STAT CARDS ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .stat-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .stat-icon.blue { background: rgba(59,130,246,0.12); }
+    .stat-icon.green { background: rgba(34,197,94,0.12); }
+    .stat-icon.yellow { background: rgba(245,158,11,0.12); }
+    .stat-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .stat-value.blue { color: var(--accent); }
+    .stat-value.green { color: var(--green); }
+    .stat-value.yellow { color: var(--yellow); }
+    .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .search-box {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 9px 14px;
+    }
+    .search-box input {
+      background: none; border: none; outline: none;
+      color: var(--text); font-family: 'DM Sans', sans-serif;
+      font-size: 13px; flex: 1;
+    }
+    .search-box input::placeholder { color: var(--muted); }
+    .search-box svg { color: var(--muted); flex-shrink: 0; }
+    .btn-secondary {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 9px 14px;
+      font-size: 13px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: background 0.15s;
+    }
+    .btn-secondary:hover { background: var(--card2); }
+
+    /* ── TABLE ── */
+    .table-container {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .table-header {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr 1.2fr 1fr 1fr 0.8fr;
+      background: var(--card2);
+      padding: 10px 16px;
+      gap: 12px;
+    }
+    .th {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .table-row {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr 1.2fr 1fr 1fr 0.8fr;
+      padding: 12px 16px;
+      gap: 12px;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .table-row:hover { background: rgba(59,130,246,0.04); }
+    .table-row.selected { background: rgba(59,130,246,0.07); }
+
+    .client-cell { display: flex; align-items: center; gap: 10px; }
+    .avatar-table {
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .client-name { font-size: 13px; font-weight: 500; color: var(--text); }
+    .client-since { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+    .td { font-size: 12px; color: var(--text); }
+    .td.muted { color: var(--muted); }
+    .td.value { font-family: 'Syne', sans-serif; font-weight: 600; color: var(--green); }
+
+    .badge-status {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 500;
+      padding: 3px 8px; border-radius: 20px;
+    }
+    .badge-ativo { background: rgba(34,197,94,0.12); color: var(--green); }
+    .badge-inativo { background: rgba(90,106,126,0.15); color: var(--muted); }
+
+    /* ── PAGINATION ── */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .pag-info { font-size: 11px; color: var(--muted); }
+    .pag-btns { display: flex; gap: 6px; }
+    .pag-btn {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+    }
+    .pag-btn:hover { color: var(--text); background: rgba(59,130,246,0.1); }
+    .pag-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* ── DRAWER ── */
+    .drawer {
+      width: 320px;
+      min-width: 320px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      position: sticky;
+      top: 0;
+      align-self: flex-start;
+      max-height: calc(100vh - 56px);
+      overflow-y: auto;
+    }
+    .drawer-avatar {
+      width: 60px; height: 60px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 700; color: #fff;
+      margin-bottom: 12px;
+      font-family: 'Syne', sans-serif;
+    }
+    .drawer-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px; font-weight: 700; color: #fff;
+    }
+    .drawer-phone { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .drawer-divider {
+      height: 1px; background: var(--border);
+      margin: 18px 0;
+    }
+    .drawer-section-title {
+      font-size: 10px; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--muted);
+      margin-bottom: 12px; font-weight: 500;
+    }
+    .fin-row {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 10px;
+    }
+    .fin-label { font-size: 12px; color: var(--muted); }
+    .fin-value { font-size: 13px; font-weight: 500; }
+    .fin-value.green { color: var(--green); font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+    .vehicle-chip {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      margin-bottom: 8px;
+    }
+    .vehicle-info p { font-size: 12px; font-weight: 500; color: var(--text); }
+    .vehicle-info span { font-size: 10px; color: var(--muted); }
+    .drawer-actions {
+      display: flex; gap: 10px; margin-top: 20px;
+    }
+    .btn-drawer-primary {
+      flex: 1; background: var(--accent);
+      border: none; border-radius: 9px;
+      padding: 10px; font-size: 13px;
+      font-weight: 600; color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-drawer-primary:hover { opacity: 0.85; }
+    .btn-drawer-secondary {
+      flex: 1; background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 9px; padding: 10px;
+      font-size: 13px; font-weight: 500;
+      color: var(--text); font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-drawer-secondary:hover { background: rgba(255,255,255,0.06); }
+  </style>
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>AutoFlow</h1>
+      <p>Gestão de Serviços</p>
+    </div>
+
+    <div class="sidebar-section">Menu</div>
+
+    <nav>
+      <a href="dashboard.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a href="clientes.html" class="nav-item active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Clientes
+      </a>
+      <a href="ordens.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Ordens
+      </a>
+      <a href="financeiro.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Financeiro
+      </a>
+      <a href="relatorios.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Relatórios
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar-sm">AD</div>
+        <div class="sidebar-user-info">
+          <p>Admin</p>
+          <span>Administrador</span>
+        </div>
+      </div>
+      <button class="btn-sair">Sair</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="content">
+
+      <!-- TOPBAR -->
+      <div class="topbar">
+        <div>
+          <h2>Clientes</h2>
+          <p>Gerenciamento de clientes cadastrados</p>
+        </div>
+        <button class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo Cliente
+        </button>
+      </div>
+
+      <!-- STATS -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon blue">👥</div>
+          <div>
+            <div class="stat-value blue">24</div>
+            <div class="stat-label">Total de Clientes</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">✅</div>
+          <div>
+            <div class="stat-value green">18</div>
+            <div class="stat-label">Clientes Ativos</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon yellow">🚗</div>
+          <div>
+            <div class="stat-value yellow">31</div>
+            <div class="stat-label">Veículos Cadastrados</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="toolbar">
+        <div class="search-box">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="search-input" placeholder="Buscar por nome, telefone ou veículo..." />
+        </div>
+        <button class="btn-secondary">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Filtros
+        </button>
+        <button class="btn-secondary">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Exportar
+        </button>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-container">
+        <div class="table-header">
+          <div class="th">Cliente</div>
+          <div class="th">Telefone</div>
+          <div class="th">Veículo</div>
+          <div class="th">Ordens</div>
+          <div class="th">Gasto Total</div>
+          <div class="th">Status</div>
+        </div>
+
+        <div id="table-body"></div>
+
+        <div class="pagination">
+          <span class="pag-info" id="pag-info">Mostrando 1–5 de 24 clientes</span>
+          <div class="pag-btns" id="pag-btns"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- DRAWER -->
+    <div class="drawer" id="drawer">
+      <div class="drawer-avatar" id="drawer-avatar">JO</div>
+      <div class="drawer-name" id="drawer-name">João Oliveira</div>
+      <div class="drawer-phone" id="drawer-phone">(11) 99999-1111</div>
+
+      <div class="drawer-divider"></div>
+
+      <div class="drawer-section-title">Resumo Financeiro</div>
+      <div class="fin-row">
+        <span class="fin-label">Total Gasto</span>
+        <span class="fin-value green" id="d-total">R$ 450,00</span>
+      </div>
+      <div class="fin-row">
+        <span class="fin-label">Ordens Abertas</span>
+        <span class="fin-value" id="d-abertas">1</span>
+      </div>
+      <div class="fin-row">
+        <span class="fin-label">Ordens Finalizadas</span>
+        <span class="fin-value" id="d-finalizadas">2</span>
+      </div>
+      <div class="fin-row">
+        <span class="fin-label">Último Serviço</span>
+        <span class="fin-value" id="d-ultimo">10/04/2025</span>
+      </div>
+
+      <div class="drawer-divider"></div>
+
+      <div class="drawer-section-title">Veículos</div>
+      <div id="drawer-vehicles"></div>
+
+      <div class="drawer-actions">
+        <button class="btn-drawer-primary">Nova Ordem</button>
+        <button class="btn-drawer-secondary">Editar</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const clientes = [
+      { id:1, nome:'João Oliveira', desde:'Jan 2024', tel:'(11) 99999-1111', veiculo:'Gol · ABC1234', ordens:3, total:450, status:'Ativo', iniciais:'JO', cor:'#3b82f6', veiculos:[{nome:'Volkswagen Gol',placa:'ABC1234 · 2019'},{nome:'Fiat Uno',placa:'XYZ9876 · 2018'}], abertas:1, finalizadas:2, ultimo:'10/04/2025' },
+      { id:2, nome:'Carlos Silva', desde:'Mai 2024', tel:'(11) 98888-2222', veiculo:'Civic · DFG5678', ordens:1, total:50, status:'Ativo', iniciais:'CS', cor:'#06b6d4', veiculos:[{nome:'Honda Civic',placa:'DFG5678 · 2021'}], abertas:1, finalizadas:0, ultimo:'09/04/2025' },
+      { id:3, nome:'Maria Alves', desde:'Fev 2026', tel:'(21) 97777-3333', veiculo:'HB20 · GHI9012', ordens:2, total:320, status:'Ativo', iniciais:'MA', cor:'#22c55e', veiculos:[{nome:'Hyundai HB20',placa:'GHI9012 · 2022'}], abertas:0, finalizadas:2, ultimo:'07/04/2025' },
+      { id:4, nome:'Roberto Ferreira', desde:'Out 2023', tel:'(11) 96666-4444', veiculo:'Civic · JKL3456', ordens:5, total:1200, status:'Ativo', iniciais:'RF', cor:'#f59e0b', veiculos:[{nome:'Honda Civic',placa:'JKL3456 · 2020'},{nome:'Fiat Palio',placa:'MNO1234 · 2016'}], abertas:2, finalizadas:3, ultimo:'08/04/2025' },
+      { id:5, nome:'Ana Pereira', desde:'Set 2023', tel:'(21) 95555-5555', veiculo:'Corolla · MNO7890', ordens:0, total:0, status:'Inativo', iniciais:'AP', cor:'#a78bfa', veiculos:[{nome:'Toyota Corolla',placa:'MNO7890 · 2020'}], abertas:0, finalizadas:0, ultimo:'—' },
+      { id:6, nome:'Lucas Mendes', desde:'Mar 2025', tel:'(11) 94444-6666', veiculo:'Onix · PQR1234', ordens:2, total:280, status:'Ativo', iniciais:'LM', cor:'#ef4444', veiculos:[{nome:'Chevrolet Onix',placa:'PQR1234 · 2023'}], abertas:1, finalizadas:1, ultimo:'06/04/2025' },
+      { id:7, nome:'Fernanda Costa', desde:'Jun 2024', tel:'(21) 93333-7777', veiculo:'Kwid · STU5678', ordens:3, total:620, status:'Ativo', iniciais:'FC', cor:'#3b82f6', veiculos:[{nome:'Renault Kwid',placa:'STU5678 · 2021'}], abertas:0, finalizadas:3, ultimo:'05/04/2025' },
+    ]
+
+    let currentPage = 1
+    const perPage = 5
+    let selectedId = 1
+    let searchTerm = ''
+
+    function fmt(v) {
+      return 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    }
+
+    function getFiltered() {
+      return clientes.filter(c =>
+        c.nome.toLowerCase().includes(searchTerm) ||
+        c.tel.includes(searchTerm) ||
+        c.veiculo.toLowerCase().includes(searchTerm)
+      )
+    }
+
+    function renderTable() {
+      const filtered = getFiltered()
+      const total = filtered.length
+      const start = (currentPage - 1) * perPage
+      const slice = filtered.slice(start, start + perPage)
+
+      document.getElementById('pag-info').textContent =
+        `Mostrando ${start + 1}–${Math.min(start + perPage, total)} de ${total} clientes`
+
+      const body = document.getElementById('table-body')
+      body.innerHTML = slice.map(c => `
+        <div class="table-row ${c.id === selectedId ? 'selected' : ''}" onclick="selectClient(${c.id})">
+          <div class="client-cell">
+            <div class="avatar-table" style="background:${c.cor}">${c.iniciais}</div>
+            <div>
+              <div class="client-name">${c.nome}</div>
+              <div class="client-since">Cliente desde ${c.desde}</div>
+            </div>
+          </div>
+          <div class="td">${c.tel}</div>
+          <div class="td muted">${c.veiculo}</div>
+          <div class="td">${c.ordens}</div>
+          <div class="td value">${fmt(c.total)}</div>
+          <div class="td">
+            <span class="badge-status ${c.status === 'Ativo' ? 'badge-ativo' : 'badge-inativo'}">
+              ● ${c.status}
+            </span>
+          </div>
+        </div>
+      `).join('')
+
+      renderPagination(total)
+    }
+
+    function renderPagination(total) {
+      const pages = Math.ceil(total / perPage)
+      const btns = document.getElementById('pag-btns')
+      btns.innerHTML = ''
+
+      const prev = document.createElement('button')
+      prev.className = 'pag-btn'
+      prev.textContent = '‹'
+      prev.onclick = () => { if (currentPage > 1) { currentPage--; renderTable() } }
+      btns.appendChild(prev)
+
+      for (let i = 1; i <= pages; i++) {
+        const b = document.createElement('button')
+        b.className = 'pag-btn' + (i === currentPage ? ' active' : '')
+        b.textContent = i
+        const pg = i
+        b.onclick = () => { currentPage = pg; renderTable() }
+        btns.appendChild(b)
+      }
+
+      const next = document.createElement('button')
+      next.className = 'pag-btn'
+      next.textContent = '›'
+      next.onclick = () => { if (currentPage < pages) { currentPage++; renderTable() } }
+      btns.appendChild(next)
+    }
+
+    function selectClient(id) {
+      selectedId = id
+      const c = clientes.find(x => x.id === id)
+      if (!c) return
+      document.getElementById('drawer-avatar').textContent = c.iniciais
+      document.getElementById('drawer-avatar').style.background = `linear-gradient(135deg, ${c.cor}, #06b6d4)`
+      document.getElementById('drawer-name').textContent = c.nome
+      document.getElementById('drawer-phone').textContent = c.tel
+      document.getElementById('d-total').textContent = fmt(c.total)
+      document.getElementById('d-abertas').textContent = c.abertas
+      document.getElementById('d-finalizadas').textContent = c.finalizadas
+      document.getElementById('d-ultimo').textContent = c.ultimo
+
+      document.getElementById('drawer-vehicles').innerHTML = c.veiculos.map(v => `
+        <div class="vehicle-chip">
+          <span style="font-size:18px">🚗</span>
+          <div class="vehicle-info">
+            <p>${v.nome}</p>
+            <span>${v.placa}</span>
+          </div>
+        </div>
+      `).join('')
+
+      renderTable()
+    }
+
+    document.getElementById('search-input').addEventListener('input', e => {
+      searchTerm = e.target.value.toLowerCase()
+      currentPage = 1
+      renderTable()
+    })
+
+    renderTable()
+    selectClient(1)
+  </script>
+</body>
+</html>

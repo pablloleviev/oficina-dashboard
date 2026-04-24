@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoFlow — Relatórios</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d1117;
+      --sidebar: #0f1823;
+      --card: #131d2a;
+      --card2: #162030;
+      --border: rgba(255,255,255,0.07);
+      --text: #e8edf3;
+      --muted: #5a6a7e;
+      --accent: #3b82f6;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --cyan: #06b6d4;
+      --purple: #a78bfa;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #1e2d3d; border-radius: 4px; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 200px; min-width: 200px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 24px 16px;
+      position: fixed; top: 0; left: 0; bottom: 0;
+      z-index: 10;
+    }
+    .sidebar-logo h1 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
+    .sidebar-logo p { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+    .sidebar-section { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin: 24px 0 10px; padding-left: 4px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: 8px; font-size: 13px;
+      color: var(--muted); cursor: pointer; transition: all 0.15s;
+      text-decoration: none; margin-bottom: 2px; border-left: 2px solid transparent;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+    .nav-item.active { color: var(--text); background: rgba(59,130,246,0.08); border-left: 2px solid var(--accent); }
+    .sidebar-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }
+    .sidebar-user { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .avatar-sm {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .sidebar-user-info p { font-size: 12px; font-weight: 500; color: var(--text); }
+    .sidebar-user-info span { font-size: 10px; color: var(--muted); }
+    .btn-sair { font-size: 12px; color: var(--red); background: none; border: none; cursor: pointer; padding: 0; font-family: 'DM Sans', sans-serif; }
+
+    /* ── MAIN ── */
+    .main { margin-left: 200px; flex: 1; padding: 28px 32px; overflow-y: auto; }
+
+    /* ── TOPBAR ── */
+    .topbar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+    .topbar h2 { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; color: #fff; }
+    .topbar p { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .btn-export {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 9px; padding: 9px 16px; font-size: 13px;
+      color: var(--text); cursor: pointer; font-family: 'DM Sans', sans-serif;
+      display: flex; align-items: center; gap: 6px; transition: background 0.15s;
+    }
+    .btn-export:hover { background: var(--card2); }
+
+    /* ── HERO CARD ── */
+    .hero-card {
+      background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(6,182,212,0.08), rgba(34,197,94,0.08));
+      border: 1px solid rgba(59,130,246,0.2);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 22px;
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 32px;
+      align-items: center;
+    }
+    .hero-card::before {
+      content: '';
+      position: absolute; right: -40px; top: -40px;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(59,130,246,0.15), transparent 70%);
+      pointer-events: none;
+    }
+    .hero-label {
+      font-size: 11px; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 1.5px;
+      font-weight: 500; margin-bottom: 10px;
+    }
+    .hero-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 42px; font-weight: 800;
+      color: var(--green); line-height: 1;
+      margin-bottom: 8px;
+    }
+    .hero-desc { font-size: 12px; color: var(--muted); }
+
+    .hero-stats { display: flex; gap: 28px; }
+    .hero-stat { text-align: right; }
+    .hero-stat-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px; font-weight: 700; line-height: 1;
+      margin-bottom: 4px;
+    }
+    .hero-stat-label { font-size: 11px; color: var(--muted); }
+
+    /* ── METRIC CARDS ── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .metric-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px 18px 14px;
+      position: relative;
+    }
+    .metric-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; margin-bottom: 12px;
+    }
+    .metric-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px; font-weight: 700;
+      line-height: 1; margin-bottom: 4px;
+    }
+    .metric-label { font-size: 11px; color: var(--muted); }
+    .metric-badge {
+      position: absolute; top: 14px; right: 14px;
+      font-size: 10px; font-weight: 600;
+      padding: 2px 7px; border-radius: 20px;
+    }
+    .badge-green-soft { background: rgba(34,197,94,0.12); color: var(--green); }
+    .badge-blue-soft { background: rgba(59,130,246,0.12); color: var(--accent); }
+    .badge-yellow-soft { background: rgba(245,158,11,0.12); color: var(--yellow); }
+    .badge-purple-soft { background: rgba(167,139,250,0.12); color: var(--purple); }
+
+    /* ── GRAPHS SECTION ── */
+    .graphs-grid {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .graph-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+    }
+    .card-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .card-subtitle { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
+
+    /* AREA CHART */
+    .area-chart-wrap { position: relative; }
+    .area-chart-labels {
+      display: flex; justify-content: space-between;
+      margin-top: 8px;
+    }
+    .area-label { font-size: 10px; color: var(--muted); }
+    .chart-legend { display: flex; gap: 16px; margin-top: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+    .legend-line { width: 16px; height: 2px; border-radius: 1px; }
+    .legend-line.dashed { background: repeating-linear-gradient(90deg, rgba(59,130,246,0.6) 0, rgba(59,130,246,0.6) 4px, transparent 4px, transparent 8px); }
+
+    /* HEATMAP */
+    .heatmap-labels-top {
+      display: flex; gap: 4px; margin-bottom: 4px; padding-left: 28px;
+    }
+    .heatmap-month { font-size: 10px; color: var(--muted); flex: 1; text-align: center; }
+    .heatmap-rows { display: flex; flex-direction: column; gap: 4px; }
+    .heatmap-row { display: flex; align-items: center; gap: 4px; }
+    .heatmap-day-label { font-size: 9px; color: var(--muted); width: 24px; flex-shrink: 0; text-align: right; }
+    .heatmap-cells { display: flex; gap: 3px; flex: 1; }
+    .heatmap-cell {
+      height: 14px; flex: 1;
+      border-radius: 2px;
+      background: rgba(34,197,94,0.08);
+    }
+    .heatmap-legend { display: flex; align-items: center; gap: 6px; margin-top: 10px; justify-content: flex-end; }
+    .heatmap-legend-label { font-size: 10px; color: var(--muted); }
+    .heatmap-scale { display: flex; gap: 3px; }
+    .heatmap-scale-cell { width: 12px; height: 12px; border-radius: 2px; }
+
+    /* ── RANKINGS ── */
+    .rankings-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .rank-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+    }
+    .rank-item {
+      background: var(--card2); border-radius: 8px;
+      padding: 10px 12px; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .rank-item:last-child { margin-bottom: 0; }
+    .rank-badge {
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .rank-1 { background: rgba(245,158,11,0.2); color: #fbbf24; }
+    .rank-2 { background: rgba(148,163,184,0.2); color: #94a3b8; }
+    .rank-3 { background: rgba(180,120,60,0.2); color: #cd7f32; }
+    .rank-n { background: rgba(90,106,126,0.2); color: var(--muted); }
+    .rank-info { flex: 1; min-width: 0; }
+    .rank-name { font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rank-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .rank-value { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; color: var(--green); white-space: nowrap; }
+
+    /* GOALS */
+    .goal-item { margin-bottom: 16px; }
+    .goal-item:last-child { margin-bottom: 0; }
+    .goal-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .goal-name { font-size: 12px; font-weight: 500; color: var(--text); }
+    .goal-pct { font-size: 12px; font-weight: 600; }
+    .goal-bar { height: 6px; background: #1e2d3d; border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
+    .goal-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+    .goal-target { font-size: 10px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>AutoFlow</h1>
+      <p>Gestão de Serviços</p>
+    </div>
+    <div class="sidebar-section">Menu</div>
+    <nav>
+      <a href="dashboard.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a href="clientes.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Clientes
+      </a>
+      <a href="ordens.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Ordens
+      </a>
+      <a href="financeiro.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Financeiro
+      </a>
+      <a href="relatorios.html" class="nav-item active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Relatórios
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar-sm">AD</div>
+        <div class="sidebar-user-info">
+          <p>Admin</p>
+          <span>Administrador</span>
+        </div>
+      </div>
+      <button class="btn-sair">Sair</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div>
+        <h2>Relatórios &amp; Analytics</h2>
+        <p>Visão consolidada do desempenho do negócio</p>
+      </div>
+      <button class="btn-export">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar Relatório
+      </button>
+    </div>
+
+    <!-- HERO -->
+    <div class="hero-card">
+      <div>
+        <div class="hero-label">Crescimento Mensal</div>
+        <div class="hero-value">+24%</div>
+        <div class="hero-desc">Comparado a Mar 2025 · Jan–Abr 2025</div>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="hero-stat-value" style="color:var(--accent)">R$ 2.456</div>
+          <div class="hero-stat-label">Faturamento</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-value" style="color:var(--green)">47</div>
+          <div class="hero-stat-label">Ordens no Mês</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-value" style="color:var(--yellow)">24</div>
+          <div class="hero-stat-label">Clientes Ativos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- METRICS -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-badge badge-green-soft">↑ 8%</span>
+        <div class="metric-icon" style="background:rgba(34,197,94,0.1)">✅</div>
+        <div class="metric-value" style="color:var(--green)">92%</div>
+        <div class="metric-label">Taxa de Conclusão</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-badge badge-blue-soft">↓ 12min</span>
+        <div class="metric-icon" style="background:rgba(59,130,246,0.1)">⏱</div>
+        <div class="metric-value" style="color:var(--accent)">1.8d</div>
+        <div class="metric-label">Tempo Médio de OS</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-badge badge-yellow-soft">→ 0%</span>
+        <div class="metric-icon" style="background:rgba(245,158,11,0.1)">🔁</div>
+        <div class="metric-value" style="color:var(--yellow)">68%</div>
+        <div class="metric-label">Retorno de Clientes</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-badge badge-purple-soft">↑ 0.3</span>
+        <div class="metric-icon" style="background:rgba(167,139,250,0.1)">⭐</div>
+        <div class="metric-value" style="color:var(--purple)">4.8</div>
+        <div class="metric-label">Satisfação / NPS</div>
+      </div>
+    </div>
+
+    <!-- GRAPHS -->
+    <div class="graphs-grid">
+
+      <!-- AREA CHART -->
+      <div class="graph-card">
+        <div class="card-title">Evolução do Faturamento</div>
+        <div class="card-subtitle">Últimos 6 meses</div>
+        <div class="area-chart-wrap">
+          <svg width="100%" height="120" viewBox="0 0 500 120" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="rgba(34,197,94,0.25)"/>
+                <stop offset="100%" stop-color="rgba(34,197,94,0)"/>
+              </linearGradient>
+              <linearGradient id="areaGrad2" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="rgba(59,130,246,0.1)"/>
+                <stop offset="100%" stop-color="rgba(59,130,246,0)"/>
+              </linearGradient>
+            </defs>
+            <!-- Grid lines -->
+            <line x1="0" y1="30" x2="500" y2="30" stroke="#1e2d3d" stroke-width="1"/>
+            <line x1="0" y1="60" x2="500" y2="60" stroke="#1e2d3d" stroke-width="1"/>
+            <line x1="0" y1="90" x2="500" y2="90" stroke="#1e2d3d" stroke-width="1"/>
+            <!-- Area 2025 prev year (dashed) -->
+            <polyline points="0,90 100,85 200,80 300,75 400,70 500,65"
+              fill="none" stroke="rgba(59,130,246,0.4)" stroke-width="1.5"
+              stroke-dasharray="6,4"/>
+            <!-- Area 2025 current (filled) -->
+            <polygon points="0,80 100,65 200,55 300,40 400,30 500,20 500,120 0,120"
+              fill="url(#areaGrad)"/>
+            <polyline points="0,80 100,65 200,55 300,40 400,30 500,20"
+              fill="none" stroke="var(--green)" stroke-width="2"/>
+            <!-- Dots -->
+            <circle cx="0" cy="80" r="3.5" fill="var(--green)"/>
+            <circle cx="100" cy="65" r="3.5" fill="var(--green)"/>
+            <circle cx="200" cy="55" r="3.5" fill="var(--green)"/>
+            <circle cx="300" cy="40" r="3.5" fill="var(--green)"/>
+            <circle cx="400" cy="30" r="3.5" fill="var(--green)"/>
+            <circle cx="500" cy="20" r="3.5" fill="var(--green)"/>
+          </svg>
+        </div>
+        <div class="area-chart-labels">
+          <span class="area-label">Nov</span>
+          <span class="area-label">Dez</span>
+          <span class="area-label">Jan</span>
+          <span class="area-label">Fev</span>
+          <span class="area-label">Mar</span>
+          <span class="area-label">Abr</span>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item">
+            <div style="width:16px;height:2px;background:var(--green);border-radius:1px"></div>
+            2025
+          </div>
+          <div class="legend-item">
+            <div class="legend-line dashed"></div>
+            2024
+          </div>
+        </div>
+      </div>
+
+      <!-- HEATMAP -->
+      <div class="graph-card">
+        <div class="card-title">Atividade por Dia</div>
+        <div class="card-subtitle">Ordens por dia da semana</div>
+        <div id="heatmap-wrap"></div>
+        <div class="heatmap-legend">
+          <span class="heatmap-legend-label">Menos</span>
+          <div class="heatmap-scale" id="heatmap-scale"></div>
+          <span class="heatmap-legend-label">Mais</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RANKINGS + GOALS -->
+    <div class="rankings-grid">
+
+      <!-- TOP CLIENTES -->
+      <div class="rank-card">
+        <div class="card-title" style="margin-bottom:4px">Top Clientes</div>
+        <div class="card-subtitle" style="margin-bottom:14px">Por valor gasto</div>
+        <div class="rank-item">
+          <div class="rank-badge rank-1">1</div>
+          <div class="rank-info"><div class="rank-name">Roberto Ferreira</div><div class="rank-sub">5 ordens</div></div>
+          <div class="rank-value">R$ 1.200</div>
+        </div>
+        <div class="rank-item">
+          <div class="rank-badge rank-2">2</div>
+          <div class="rank-info"><div class="rank-name">João Oliveira</div><div class="rank-sub">3 ordens</div></div>
+          <div class="rank-value">R$ 450</div>
+        </div>
+        <div class="rank-item">
+          <div class="rank-badge rank-3">3</div>
+          <div class="rank-info"><div class="rank-name">Maria Alves</div><div class="rank-sub">2 ordens</div></div>
+          <div class="rank-value">R$ 320</div>
+        </div>
+        <div class="rank-item">
+          <div class="rank-badge rank-n">4</div>
+          <div class="rank-info"><div class="rank-name">Fernanda Costa</div><div class="rank-sub">3 ordens</div></div>
+          <div class="rank-value">R$ 280</div>
+        </div>
+      </div>
+
+      <!-- TOP SERVIÇOS -->
+      <div class="rank-card">
+        <div class="card-title" style="margin-bottom:4px">Top Serviços</div>
+        <div class="card-subtitle" style="margin-bottom:14px">Por frequência</div>
+        <div class="rank-item">
+          <div class="rank-badge rank-1">1</div>
+          <div class="rank-info"><div class="rank-name">Troca de Óleo</div><div class="rank-sub">18 vezes</div></div>
+          <div class="rank-value" style="color:var(--accent)">R$ 750</div>
+        </div>
+        <div class="rank-item">
+          <div class="rank-badge rank-2">2</div>
+          <div class="rank-info"><div class="rank-name">Manutenção Geral</div><div class="rank-sub">12 vezes</div></div>
+          <div class="rank-value" style="color:var(--accent)">R$ 620</div>
+        </div>
+        <div class="rank-item">
+          <div class="rank-badge rank-3">3</div>
+          <div class="rank-info"><div class="rank-name">Alinhamento</div><div class="rank-sub">9 vezes</div></div>
+          <div class="rank-value" style="color:var(--accent)">R$ 480</div>
+        </div>
+        <div class="rank-item">
+          <div class="rank-badge rank-n">4</div>
+          <div class="rank-info"><div class="rank-name">Troca de Pneus</div><div class="rank-sub">6 vezes</div></div>
+          <div class="rank-value" style="color:var(--accent)">R$ 350</div>
+        </div>
+      </div>
+
+      <!-- METAS -->
+      <div class="rank-card">
+        <div class="card-title" style="margin-bottom:4px">Metas do Mês</div>
+        <div class="card-subtitle" style="margin-bottom:16px">Abril 2025</div>
+        <div class="goal-item">
+          <div class="goal-header">
+            <span class="goal-name">Faturamento</span>
+            <span class="goal-pct" style="color:var(--green)">82%</span>
+          </div>
+          <div class="goal-bar"><div class="goal-fill" style="width:82%;background:var(--green)"></div></div>
+          <div class="goal-target">Meta: R$ 3.000,00</div>
+        </div>
+        <div class="goal-item">
+          <div class="goal-header">
+            <span class="goal-name">Novas Ordens</span>
+            <span class="goal-pct" style="color:var(--accent)">94%</span>
+          </div>
+          <div class="goal-bar"><div class="goal-fill" style="width:94%;background:var(--accent)"></div></div>
+          <div class="goal-target">Meta: 50 ordens</div>
+        </div>
+        <div class="goal-item">
+          <div class="goal-header">
+            <span class="goal-name">Novos Clientes</span>
+            <span class="goal-pct" style="color:var(--yellow)">60%</span>
+          </div>
+          <div class="goal-bar"><div class="goal-fill" style="width:60%;background:var(--yellow)"></div></div>
+          <div class="goal-target">Meta: 10 clientes</div>
+        </div>
+        <div class="goal-item">
+          <div class="goal-header">
+            <span class="goal-name">Satisfação</span>
+            <span class="goal-pct" style="color:var(--purple)">96%</span>
+          </div>
+          <div class="goal-bar"><div class="goal-fill" style="width:96%;background:var(--purple)"></div></div>
+          <div class="goal-target">Meta: NPS 5.0</div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    // Heatmap
+    const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex']
+    const months = ['Jan', 'Fev', 'Mar', 'Abr']
+    const weeksPerMonth = 4
+
+    function heatColor(v) {
+      return `rgba(34,197,94,${(v * 0.18 + 0.05).toFixed(2)})`
+    }
+
+    let heatHtml = `<div class="heatmap-labels-top">`
+    months.forEach(m => {
+      for (let w = 0; w < weeksPerMonth; w++) {
+        heatHtml += `<div class="heatmap-month">${w === 1 ? m : ''}</div>`
+      }
+    })
+    heatHtml += '</div><div class="heatmap-rows">'
+
+    days.forEach(d => {
+      heatHtml += `<div class="heatmap-row"><div class="heatmap-day-label">${d}</div><div class="heatmap-cells">`
+      for (let i = 0; i < months.length * weeksPerMonth; i++) {
+        const v = Math.floor(Math.random() * 6)
+        heatHtml += `<div class="heatmap-cell" style="background:${heatColor(v)}" title="${v} ordens"></div>`
+      }
+      heatHtml += '</div></div>'
+    })
+    heatHtml += '</div>'
+
+    document.getElementById('heatmap-wrap').innerHTML = heatHtml
+
+    const scaleEl = document.getElementById('heatmap-scale')
+    for (let i = 0; i <= 5; i++) {
+      scaleEl.innerHTML += `<div class="heatmap-scale-cell" style="background:${heatColor(i)}"></div>`
+    }
+  </script>
+</body>
+</html>
