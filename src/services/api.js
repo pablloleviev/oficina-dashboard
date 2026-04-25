@@ -2,6 +2,28 @@ const BASE_URL = import.meta.env.VITE_API_URL || "https://autoflow-api-p4tv.onre
 const OS_URL = `${BASE_URL}/OrdemServico`;
 
 // ===============================
+// AUTH
+// ===============================
+export async function login(email, senha) {
+  const res = await fetchWithTimeout(`${BASE_URL}/Auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, senha }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Email ou senha inválidos");
+  }
+
+  const data = await res.json();
+  const token = data?.token ?? data?.data?.token;
+
+  if (!token) throw new Error("Email ou senha inválidos");
+
+  return token;
+}
+
+// ===============================
 // HEADERS
 // ===============================
 function getHeaders() {
