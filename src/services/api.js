@@ -314,7 +314,7 @@ export async function getVeiculosByCliente(clienteId) {
     console.error("[api] getVeiculosByCliente: clienteId inválido →", clienteId);
     return [];
   }
-  const url = BASE_URL + "/Clientes/" + id + "/veiculos";
+  const url = BASE_URL + "/Veiculos/cliente/" + id;
   console.log("[api] getVeiculosByCliente →", url);
   const data = await request(url);
   return Array.isArray(data) ? data : [];
