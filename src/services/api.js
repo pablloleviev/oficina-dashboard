@@ -309,6 +309,6 @@ export async function addVeiculoToCliente(clienteId, veiculo) {
 }
 
 export async function getVeiculosByCliente(clienteId) {
-  const data = await request(`${BASE_URL}/Clientes/${clienteId}/veiculos`);
+  const data = await request(`${BASE_URL}/Veiculos/cliente/${clienteId}`);
   return Array.isArray(data) ? data : [];
 }

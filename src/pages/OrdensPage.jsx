@@ -59,7 +59,10 @@ function OrdensPage({ showToast, role }) {
     if (!clienteId) { setVeiculosLista([]); setVeiculoId(""); return }
     getVeiculosByCliente(clienteId)
       .then(v => { setVeiculosLista(v); setVeiculoId("") })
-      .catch(() => setVeiculosLista([]))
+      .catch(err => {
+        console.error("[OrdensPage] Falha ao buscar veículos do cliente", clienteId, err)
+        setVeiculosLista([])
+      })
   }, [clienteId])
 
   async function salvar() {
