@@ -311,10 +311,10 @@ export async function addVeiculoToCliente(clienteId, veiculo) {
 export async function getVeiculosByCliente(clienteId) {
   const id = parseInt(clienteId, 10);
   if (!id || isNaN(id)) {
-    console.error("[api] getVeiculosByCliente: clienteId inválido recebido →", clienteId);
+    console.error("[api] getVeiculosByCliente: clienteId inválido →", clienteId);
     return [];
   }
-  const url = BASE_URL + "/Veiculos/cliente/" + id;
+  const url = BASE_URL + "/Clientes/" + id + "/veiculos";
   console.log("[api] getVeiculosByCliente →", url);
   const data = await request(url);
   return Array.isArray(data) ? data : [];
