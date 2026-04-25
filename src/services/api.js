@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5182/api";
+const BASE_URL = import.meta.env.VITE_API_URL || "https://autoflow-api-p4tv.onrender.com/api";
 const OS_URL = `${BASE_URL}/OrdemServico`;
 
 // ===============================
