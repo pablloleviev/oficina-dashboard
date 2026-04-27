@@ -223,7 +223,7 @@ app.Use(async (context, next) =>
                 {
                     success = false,
                     message = "Erro interno do servidor",
-                    debug = ex.Message  // ⚠️ TEMPORÁRIO: vamos remover no final
+                    debug = ex.Message
                 })
             );
         }
@@ -247,7 +247,6 @@ using (var scope = app.Services.CreateScope())
         var providerName = context.Database.ProviderName ?? "Unknown";
         Console.WriteLine($"📂 Provider detectado: {providerName}");
 
-        // Se houver migrations pendentes, aplica. Senão, cria o schema do zero.
         var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
         var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
 
@@ -259,7 +258,6 @@ using (var scope = app.Services.CreateScope())
         }
         else
         {
-            // Sem migrations no projeto: cria o schema direto do modelo
             await context.Database.EnsureCreatedAsync();
             Console.WriteLine($"✅ SCHEMA CRIADO VIA EnsureCreated ({providerName}).");
         }
