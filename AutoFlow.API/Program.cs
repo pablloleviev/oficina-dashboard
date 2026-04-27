@@ -7,6 +7,7 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -39,6 +40,24 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
+
+// ========================= DIAGNÓSTICO DE VARIÁVEIS DE AMBIENTE =========================
+// 🔍 Vamos descobrir o que o Render está realmente entregando para o app
+Console.WriteLine("═══════════════════════════════════════════");
+Console.WriteLine("🔍 DIAGNÓSTICO DE VARIÁVEIS DE AMBIENTE");
+
+var diagDbUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+var diagConnStr = Environment.GetEnvironmentVariable("CONNECTION_STRING");
+var diagJwt = Environment.GetEnvironmentVariable("JWT_KEY");
+var diagAspEnv = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
+Console.WriteLine($"   DATABASE_URL presente?     {!string.IsNullOrEmpty(diagDbUrl)}");
+Console.WriteLine($"   DATABASE_URL tamanho:      {(diagDbUrl?.Length ?? 0)} caracteres");
+Console.WriteLine($"   DATABASE_URL começa com:   {(string.IsNullOrEmpty(diagDbUrl) ? "(vazio)" : diagDbUrl.Substring(0, Math.Min(20, diagDbUrl.Length)) + "...")}");
+Console.WriteLine($"   CONNECTION_STRING presente? {!string.IsNullOrEmpty(diagConnStr)}");
+Console.WriteLine($"   JWT_KEY presente?          {!string.IsNullOrEmpty(diagJwt)}");
+Console.WriteLine($"   ASPNETCORE_ENVIRONMENT:    {diagAspEnv ?? "(não definido)"}");
+Console.WriteLine("═══════════════════════════════════════════");
 
 // ========================= DATABASE (SUPORTE A URI DO RENDER) =========================
 string? GetConnectionString()
@@ -100,6 +119,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         Console.WriteLine("📂 DATABASE: Usando SQLite (Desenvolvimento)");
         options.UseSqlite("Data Source=autoflow.db");
     }
+
+    // 🔥 SUPRIME o warning chato do EF Core 9 sobre PendingModelChanges
+    // (necessário porque usamos EnsureCreatedAsync em vez de migrations)
+    options.ConfigureWarnings(warnings =>
+        warnings.Ignore(RelationalEventId.PendingModelChangesWarning)
+    );
 });
 
 // ========================= SERVICES =========================
