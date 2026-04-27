@@ -60,9 +60,13 @@ string? GetConnectionString()
             var host = uri.Host;
             var database = uri.AbsolutePath.TrimStart('/');
             
-            var portPart = uri.Port != -1 ? $";Port={uri.Port}" : "";
+            if (rawUrl.StartsWith("postgres", StringComparison.OrdinalIgnoreCase))
+            {
+                var pgPort = uri.Port != -1 ? $"Port={uri.Port};" : "";
+                return $"Host={host};{pgPort}Database={database};Username={user};Password={password};Timeout=15;CommandTimeout=15;SslMode=Require;Trust Server Certificate=true;";
+            }
 
-            // String base sem opções específicas de provider ainda, com Timeout maior para o Render
+            var portPart = uri.Port != -1 ? $";Port={uri.Port}" : "";
             return $"Server={host}{portPart};Database={database};Uid={user};Pwd={password};Connect Timeout=15";
         }
         catch { return rawUrl; }
@@ -75,10 +79,21 @@ var baseConnString = GetConnectionString();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
+    var rawUrl = Environment.GetEnvironmentVariable("DATABASE_URL") 
+              ?? Environment.GetEnvironmentVariable("CONNECTION_STRING") ?? "";
+
     if (!string.IsNullOrEmpty(baseConnString) && (baseConnString.Contains("Server=") || baseConnString.Contains("Host=")))
     {
-        Console.WriteLine("📂 DATABASE: Usando MySQL (Produção/Render)");
-        options.UseMySql(baseConnString, new MySqlServerVersion(new Version(8, 0, 32)));
+        if (rawUrl.StartsWith("postgres", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("📂 DATABASE: Usando PostgreSQL (Produção/Render)");
+            options.UseNpgsql(baseConnString);
+        }
+        else
+        {
+            Console.WriteLine("📂 DATABASE: Usando MySQL (Produção/Render)");
+            options.UseMySql(baseConnString, new MySqlServerVersion(new Version(8, 0, 32)));
+        }
     }
     else
     {
