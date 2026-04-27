@@ -78,7 +78,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     if (!string.IsNullOrEmpty(baseConnString) && (baseConnString.Contains("Server=") || baseConnString.Contains("Host=")))
     {
         Console.WriteLine("📂 DATABASE: Usando MySQL (Produção/Render)");
-        options.UseMySql(baseConnString, ServerVersion.AutoDetect(baseConnString));
+        options.UseMySql(baseConnString, new MySqlServerVersion(new Version(8, 0, 32)));
     }
     else
     {
