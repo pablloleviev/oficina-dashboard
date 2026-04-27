@@ -28,8 +28,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AutoFlowCors", policy =>
     {
         policy.WithOrigins(
-                "https://autoflow-gestao.vercel.app", 
-                "http://localhost:5173", 
+                "https://autoflow-gestao.vercel.app",
+                "http://localhost:5173",
                 "http://localhost:3000",
                 "http://127.0.0.1:5173",
                 "http://127.0.0.1:3000"
@@ -43,7 +43,7 @@ builder.Services.AddCors(options =>
 // ========================= DATABASE (SUPORTE A URI DO RENDER) =========================
 string? GetConnectionString()
 {
-    var rawUrl = Environment.GetEnvironmentVariable("DATABASE_URL") 
+    var rawUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
               ?? Environment.GetEnvironmentVariable("CONNECTION_STRING");
 
     if (string.IsNullOrEmpty(rawUrl))
@@ -59,7 +59,7 @@ string? GetConnectionString()
             var password = userInfo.Length > 1 ? userInfo[1] : "";
             var host = uri.Host;
             var database = uri.AbsolutePath.TrimStart('/');
-            
+
             if (rawUrl.StartsWith("postgres", StringComparison.OrdinalIgnoreCase))
             {
                 var pgPort = uri.Port != -1 ? $"Port={uri.Port};" : "";
@@ -79,7 +79,7 @@ var baseConnString = GetConnectionString();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    var rawUrl = Environment.GetEnvironmentVariable("DATABASE_URL") 
+    var rawUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
               ?? Environment.GetEnvironmentVariable("CONNECTION_STRING") ?? "";
 
     if (!string.IsNullOrEmpty(baseConnString) && (baseConnString.Contains("Server=") || baseConnString.Contains("Host=")))
@@ -192,7 +192,44 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 // ========================= PIPELINE =========================
+// 🔥 CORS PRIMEIRO — antes de qualquer coisa que possa falhar
 app.UseCors("AutoFlowCors");
+
+// 🔥 HANDLER GLOBAL DE EXCEÇÕES — captura qualquer erro 500 e loga a verdade
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("═══════════════════════════════════════════");
+        Console.WriteLine("❌ EXCEÇÃO NÃO TRATADA NA REQUISIÇÃO");
+        Console.WriteLine($"   Rota: {context.Request.Method} {context.Request.Path}");
+        Console.WriteLine($"   Mensagem: {ex.Message}");
+        Console.WriteLine($"   Tipo: {ex.GetType().Name}");
+        if (ex.InnerException != null)
+            Console.WriteLine($"   Inner: {ex.InnerException.Message}");
+        Console.WriteLine($"   Stack:\n{ex.StackTrace}");
+        Console.WriteLine("═══════════════════════════════════════════");
+
+        if (!context.Response.HasStarted)
+        {
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(
+                JsonSerializer.Serialize(new
+                {
+                    success = false,
+                    message = "Erro interno do servidor",
+                    debug = ex.Message  // ⚠️ TEMPORÁRIO: vamos remover no final
+                })
+            );
+        }
+    }
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
@@ -207,19 +244,37 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        // Aplica criação direta do SQLite (ignora migrations de outros bancos)
-        await context.Database.EnsureCreatedAsync();
-        Console.WriteLine("✅ BANCO DE DADOS CRIADO COM SUCESSO (SQLite).");
+        var providerName = context.Database.ProviderName ?? "Unknown";
+        Console.WriteLine($"📂 Provider detectado: {providerName}");
+
+        // Se houver migrations pendentes, aplica. Senão, cria o schema do zero.
+        var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+        var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
+
+        if (pendingMigrations.Any() || appliedMigrations.Any())
+        {
+            Console.WriteLine($"📦 Aplicando {pendingMigrations.Count()} migrations pendentes...");
+            await context.Database.MigrateAsync();
+            Console.WriteLine("✅ MIGRATIONS APLICADAS COM SUCESSO.");
+        }
+        else
+        {
+            // Sem migrations no projeto: cria o schema direto do modelo
+            await context.Database.EnsureCreatedAsync();
+            Console.WriteLine($"✅ SCHEMA CRIADO VIA EnsureCreated ({providerName}).");
+        }
 
         var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
         await authService.GarantirAdminPadrao();
-        Console.WriteLine("🚀 PROCESSO DE SEED CONCLUÍDO.");
+        Console.WriteLine("🚀 SEED DE ADMIN CONCLUÍDO.");
     }
     catch (Exception ex)
     {
         Console.WriteLine("❌ ERRO CRÍTICO NO STARTUP: " + ex.Message);
         if (ex.InnerException != null)
             Console.WriteLine("   -> Detalhes: " + ex.InnerException.Message);
+        Console.WriteLine("   -> Stack: " + ex.StackTrace);
+        throw;
     }
 }
 
