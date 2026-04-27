@@ -75,8 +75,16 @@ var baseConnString = GetConnectionString();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    Console.WriteLine("📂 DATABASE: Forçando uso do SQLite (Modo Apresentação Segura)");
-    options.UseSqlite("Data Source=autoflow.db");
+    if (!string.IsNullOrEmpty(baseConnString) && (baseConnString.Contains("Server=") || baseConnString.Contains("Host=")))
+    {
+        Console.WriteLine("📂 DATABASE: Usando MySQL (Produção/Render)");
+        options.UseMySql(baseConnString, ServerVersion.AutoDetect(baseConnString));
+    }
+    else
+    {
+        Console.WriteLine("📂 DATABASE: Usando SQLite (Desenvolvimento)");
+        options.UseSqlite("Data Source=autoflow.db");
+    }
 });
 
 // ========================= SERVICES =========================

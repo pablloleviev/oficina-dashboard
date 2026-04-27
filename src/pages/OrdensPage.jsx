@@ -57,10 +57,10 @@ function OrdensPage({ showToast, role }) {
 
   useEffect(() => {
     if (!clienteId) { setVeiculosLista([]); setVeiculoId(""); return }
-    getVeiculosByCliente(clienteId)
-      .then(v => { setVeiculosLista(v); setVeiculoId("") })
-      .catch(() => setVeiculosLista([]))
-  }, [clienteId])
+    const cliente = clientesLista.find(c => c.id === Number(clienteId))
+    setVeiculosLista(cliente?.veiculos || [])
+    setVeiculoId("")
+  }, [clienteId, clientesLista])
 
   async function salvar() {
     if (!clienteId || !servico || !valor || !meioPagamento) {
