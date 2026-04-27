@@ -63,7 +63,7 @@ string? GetConnectionString()
             var portPart = uri.Port != -1 ? $";Port={uri.Port}" : "";
 
             // String base sem opções específicas de provider ainda, com Timeout maior para o Render
-            return $"Server={host}{portPart};Database={database};Uid={user};Pwd={password};Connect Timeout=60";
+            return $"Server={host}{portPart};Database={database};Uid={user};Pwd={password};Connect Timeout=15";
         }
         catch { return rawUrl; }
     }
