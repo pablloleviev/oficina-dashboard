@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,7 +43,6 @@ builder.Services.AddCors(options =>
 });
 
 // ========================= DIAGNÓSTICO DE VARIÁVEIS DE AMBIENTE =========================
-// 🔍 Vamos descobrir o que o Render está realmente entregando para o app
 Console.WriteLine("═══════════════════════════════════════════");
 Console.WriteLine("🔍 DIAGNÓSTICO DE VARIÁVEIS DE AMBIENTE");
 
@@ -59,39 +59,63 @@ Console.WriteLine($"   JWT_KEY presente?          {!string.IsNullOrEmpty(diagJwt
 Console.WriteLine($"   ASPNETCORE_ENVIRONMENT:    {diagAspEnv ?? "(não definido)"}");
 Console.WriteLine("═══════════════════════════════════════════");
 
-// ========================= DATABASE (SUPORTE A URI DO RENDER) =========================
+// ========================= DATABASE (PARSING ROBUSTO DA URI) =========================
+// 🔥 Função que converte URLs do tipo "postgresql://user:pass@host:port/db"
+// em connection strings que o Npgsql/MySql entendem.
+// Usa parsing manual em vez de System.Uri (que falha com schemes não-HTTP).
 string? GetConnectionString()
 {
     var rawUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
               ?? Environment.GetEnvironmentVariable("CONNECTION_STRING");
 
     if (string.IsNullOrEmpty(rawUrl))
-        return builder.Configuration.GetConnectionString("DefaultConnection");
-
-    if (rawUrl.Contains("://"))
     {
-        try
-        {
-            var uri = new Uri(rawUrl);
-            var userInfo = uri.UserInfo.Split(':');
-            var user = userInfo[0];
-            var password = userInfo.Length > 1 ? userInfo[1] : "";
-            var host = uri.Host;
-            var database = uri.AbsolutePath.TrimStart('/');
-
-            if (rawUrl.StartsWith("postgres", StringComparison.OrdinalIgnoreCase))
-            {
-                var pgPort = uri.Port != -1 ? $"Port={uri.Port};" : "";
-                return $"Host={host};{pgPort}Database={database};Username={user};Password={password};Timeout=15;CommandTimeout=15;SslMode=Require;Trust Server Certificate=true;";
-            }
-
-            var portPart = uri.Port != -1 ? $";Port={uri.Port}" : "";
-            return $"Server={host}{portPart};Database={database};Uid={user};Pwd={password};Connect Timeout=15";
-        }
-        catch { return rawUrl; }
+        Console.WriteLine("⚠️  GetConnectionString: nenhuma env var, usando appsettings.json");
+        return builder.Configuration.GetConnectionString("DefaultConnection");
     }
 
-    return rawUrl;
+    // Se NÃO contém "://", já é uma connection string completa, retorna direto
+    if (!rawUrl.Contains("://"))
+    {
+        Console.WriteLine("ℹ️  GetConnectionString: URL já é connection string, retornando direto");
+        return rawUrl;
+    }
+
+    // Detecta se é Postgres ou MySQL pelo prefixo
+    bool isPostgres = rawUrl.StartsWith("postgres", StringComparison.OrdinalIgnoreCase);
+
+    // Regex para extrair os componentes da URI: scheme://user:pass@host:port/database
+    var match = Regex.Match(
+        rawUrl,
+        @"^(?<scheme>\w+)://(?<user>[^:]+):(?<pass>[^@]+)@(?<host>[^:/]+)(?::(?<port>\d+))?/(?<db>[^?]+)",
+        RegexOptions.IgnoreCase
+    );
+
+    if (!match.Success)
+    {
+        Console.WriteLine($"⚠️  GetConnectionString: NÃO consegui parsear a URL. Retornando crua.");
+        return rawUrl;
+    }
+
+    var user = match.Groups["user"].Value;
+    var pass = match.Groups["pass"].Value;
+    var host = match.Groups["host"].Value;
+    var port = match.Groups["port"].Success ? match.Groups["port"].Value : "";
+    var db = match.Groups["db"].Value;
+
+    Console.WriteLine($"✅ GetConnectionString: parse OK — host={host}, db={db}, user={user}, port={(string.IsNullOrEmpty(port) ? "(default)" : port)}");
+
+    if (isPostgres)
+    {
+        var portPart = !string.IsNullOrEmpty(port) ? $"Port={port};" : "";
+        return $"Host={host};{portPart}Database={db};Username={user};Password={pass};Timeout=15;CommandTimeout=15;SslMode=Require;Trust Server Certificate=true;";
+    }
+    else
+    {
+        // MySQL
+        var portPart = !string.IsNullOrEmpty(port) ? $";Port={port}" : "";
+        return $"Server={host}{portPart};Database={db};Uid={user};Pwd={pass};Connect Timeout=15";
+    }
 }
 
 var baseConnString = GetConnectionString();
@@ -121,7 +145,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     }
 
     // 🔥 SUPRIME o warning chato do EF Core 9 sobre PendingModelChanges
-    // (necessário porque usamos EnsureCreatedAsync em vez de migrations)
     options.ConfigureWarnings(warnings =>
         warnings.Ignore(RelationalEventId.PendingModelChangesWarning)
     );
@@ -217,7 +240,6 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 // ========================= PIPELINE =========================
-// 🔥 CORS PRIMEIRO — antes de qualquer coisa que possa falhar
 app.UseCors("AutoFlowCors");
 
 // 🔥 HANDLER GLOBAL DE EXCEÇÕES — captura qualquer erro 500 e loga a verdade
@@ -272,20 +294,11 @@ using (var scope = app.Services.CreateScope())
         var providerName = context.Database.ProviderName ?? "Unknown";
         Console.WriteLine($"📂 Provider detectado: {providerName}");
 
-        var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
-        var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
-
-        if (pendingMigrations.Any() || appliedMigrations.Any())
-        {
-            Console.WriteLine($"📦 Aplicando {pendingMigrations.Count()} migrations pendentes...");
-            await context.Database.MigrateAsync();
-            Console.WriteLine("✅ MIGRATIONS APLICADAS COM SUCESSO.");
-        }
-        else
-        {
-            await context.Database.EnsureCreatedAsync();
-            Console.WriteLine($"✅ SCHEMA CRIADO VIA EnsureCreated ({providerName}).");
-        }
+        // 🔥 SEM MIGRATIONS NO PROJETO: cria o schema direto do modelo
+        // (isso funciona em qualquer banco — Postgres, MySQL, SQLite)
+        Console.WriteLine("📦 Criando schema via EnsureCreatedAsync...");
+        await context.Database.EnsureCreatedAsync();
+        Console.WriteLine($"✅ SCHEMA CRIADO/VERIFICADO ({providerName}).");
 
         var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
         await authService.GarantirAdminPadrao();
