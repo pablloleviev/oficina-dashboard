@@ -10,9 +10,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Npgsql;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,16 +53,18 @@ var diagAspEnv = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
 
 Console.WriteLine($"   DATABASE_URL presente?     {!string.IsNullOrEmpty(diagDbUrl)}");
 Console.WriteLine($"   DATABASE_URL tamanho:      {(diagDbUrl?.Length ?? 0)} caracteres");
-Console.WriteLine($"   DATABASE_URL começa com:   {(string.IsNullOrEmpty(diagDbUrl) ? "(vazio)" : diagDbUrl.Substring(0, Math.Min(20, diagDbUrl.Length)) + "...")}");
+Console.WriteLine($"   DATABASE_URL começa com:   {(string.IsNullOrEmpty(diagDbUrl) ? "(vazio)" : diagDbUrl.Substring(0, Math.Min(40, diagDbUrl.Length)) + "...")}");
 Console.WriteLine($"   CONNECTION_STRING presente? {!string.IsNullOrEmpty(diagConnStr)}");
 Console.WriteLine($"   JWT_KEY presente?          {!string.IsNullOrEmpty(diagJwt)}");
 Console.WriteLine($"   ASPNETCORE_ENVIRONMENT:    {diagAspEnv ?? "(não definido)"}");
 Console.WriteLine("═══════════════════════════════════════════");
 
-// ========================= DATABASE (PARSING ROBUSTO DA URI) =========================
-// 🔥 Função que converte URLs do tipo "postgresql://user:pass@host:port/db"
-// em connection strings que o Npgsql/MySql entendem.
-// Usa parsing manual em vez de System.Uri (que falha com schemes não-HTTP).
+// ========================= DATABASE — ABORDAGEM NINJA 🥷 =========================
+// Convertemos URLs do tipo "postgresql://user:pass@host:port/db" em connection strings
+// usando o NpgsqlConnectionStringBuilder, que é robusto e à prova de falhas.
+//
+// Truque: o System.Uri rejeita schemes não-HTTP, então trocamos temporariamente
+// "postgresql://" e "postgres://" por "https://" só pra parsear, sem alterar os dados.
 string? GetConnectionString()
 {
     var rawUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
@@ -70,51 +72,69 @@ string? GetConnectionString()
 
     if (string.IsNullOrEmpty(rawUrl))
     {
-        Console.WriteLine("⚠️  GetConnectionString: nenhuma env var, usando appsettings.json");
+        Console.WriteLine("ℹ️  GetConnectionString: nenhuma env var, usando appsettings.json");
         return builder.Configuration.GetConnectionString("DefaultConnection");
     }
 
-    // Se NÃO contém "://", já é uma connection string completa, retorna direto
+    // Se NÃO contém "://", já é uma connection string completa
     if (!rawUrl.Contains("://"))
     {
         Console.WriteLine("ℹ️  GetConnectionString: URL já é connection string, retornando direto");
         return rawUrl;
     }
 
-    // Detecta se é Postgres ou MySQL pelo prefixo
     bool isPostgres = rawUrl.StartsWith("postgres", StringComparison.OrdinalIgnoreCase);
 
-    // Regex para extrair os componentes da URI: scheme://user:pass@host:port/database
-    var match = Regex.Match(
-        rawUrl,
-        @"^(?<scheme>\w+)://(?<user>[^:]+):(?<pass>[^@]+)@(?<host>[^:/]+)(?::(?<port>\d+))?/(?<db>[^?]+)",
-        RegexOptions.IgnoreCase
-    );
-
-    if (!match.Success)
+    try
     {
-        Console.WriteLine($"⚠️  GetConnectionString: NÃO consegui parsear a URL. Retornando crua.");
+        // 🥷 Truque: substitui o scheme pra https temporariamente, só pra parsear
+        var normalizedUrl = rawUrl
+            .Replace("postgresql://", "https://", StringComparison.OrdinalIgnoreCase)
+            .Replace("postgres://", "https://", StringComparison.OrdinalIgnoreCase)
+            .Replace("mysql://", "https://", StringComparison.OrdinalIgnoreCase);
+
+        var uri = new Uri(normalizedUrl);
+
+        // Extrai os dados da URI
+        var userInfo = uri.UserInfo.Split(':', 2);
+        var user = Uri.UnescapeDataString(userInfo[0]);
+        var pass = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+        var host = uri.Host;
+        var port = uri.Port;
+        var db = uri.AbsolutePath.TrimStart('/');
+
+        Console.WriteLine($"✅ GetConnectionString: parse OK — host={host}, db={db}, user={user}, port={(port == -1 ? "(default)" : port.ToString())}");
+
+        if (isPostgres)
+        {
+            // 🥷 Usa NpgsqlConnectionStringBuilder — robusto e nativo
+            var pgBuilder = new NpgsqlConnectionStringBuilder
+            {
+                Host = host,
+                Database = db,
+                Username = user,
+                Password = pass,
+                SslMode = SslMode.Require,
+                TrustServerCertificate = true,
+                Timeout = 15,
+                CommandTimeout = 15
+            };
+            if (port != -1) pgBuilder.Port = port;
+
+            return pgBuilder.ToString();
+        }
+        else
+        {
+            // MySQL — connection string manual
+            var portPart = port != -1 ? $";Port={port}" : "";
+            return $"Server={host}{portPart};Database={db};Uid={user};Pwd={pass};Connect Timeout=15";
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠️  GetConnectionString: erro ao parsear ({ex.GetType().Name}): {ex.Message}");
+        Console.WriteLine($"⚠️  Retornando URL crua. App provavelmente cairá no SQLite.");
         return rawUrl;
-    }
-
-    var user = match.Groups["user"].Value;
-    var pass = match.Groups["pass"].Value;
-    var host = match.Groups["host"].Value;
-    var port = match.Groups["port"].Success ? match.Groups["port"].Value : "";
-    var db = match.Groups["db"].Value;
-
-    Console.WriteLine($"✅ GetConnectionString: parse OK — host={host}, db={db}, user={user}, port={(string.IsNullOrEmpty(port) ? "(default)" : port)}");
-
-    if (isPostgres)
-    {
-        var portPart = !string.IsNullOrEmpty(port) ? $"Port={port};" : "";
-        return $"Host={host};{portPart}Database={db};Username={user};Password={pass};Timeout=15;CommandTimeout=15;SslMode=Require;Trust Server Certificate=true;";
-    }
-    else
-    {
-        // MySQL
-        var portPart = !string.IsNullOrEmpty(port) ? $";Port={port}" : "";
-        return $"Server={host}{portPart};Database={db};Uid={user};Pwd={pass};Connect Timeout=15";
     }
 }
 
@@ -242,7 +262,7 @@ app.UseSwaggerUI();
 // ========================= PIPELINE =========================
 app.UseCors("AutoFlowCors");
 
-// 🔥 HANDLER GLOBAL DE EXCEÇÕES — captura qualquer erro 500 e loga a verdade
+// 🔥 HANDLER GLOBAL DE EXCEÇÕES
 app.Use(async (context, next) =>
 {
     try
@@ -294,8 +314,6 @@ using (var scope = app.Services.CreateScope())
         var providerName = context.Database.ProviderName ?? "Unknown";
         Console.WriteLine($"📂 Provider detectado: {providerName}");
 
-        // 🔥 SEM MIGRATIONS NO PROJETO: cria o schema direto do modelo
-        // (isso funciona em qualquer banco — Postgres, MySQL, SQLite)
         Console.WriteLine("📦 Criando schema via EnsureCreatedAsync...");
         await context.Database.EnsureCreatedAsync();
         Console.WriteLine($"✅ SCHEMA CRIADO/VERIFICADO ({providerName}).");
