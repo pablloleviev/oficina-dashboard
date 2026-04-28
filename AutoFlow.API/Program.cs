@@ -59,12 +59,9 @@ Console.WriteLine($"   JWT_KEY presente?          {!string.IsNullOrEmpty(diagJwt
 Console.WriteLine($"   ASPNETCORE_ENVIRONMENT:    {diagAspEnv ?? "(não definido)"}");
 Console.WriteLine("═══════════════════════════════════════════");
 
-// ========================= DATABASE — ABORDAGEM NINJA 🥷 =========================
-// Convertemos URLs do tipo "postgresql://user:pass@host:port/db" em connection strings
-// usando o NpgsqlConnectionStringBuilder, que é robusto e à prova de falhas.
-//
-// Truque: o System.Uri rejeita schemes não-HTTP, então trocamos temporariamente
-// "postgresql://" e "postgres://" por "https://" só pra parsear, sem alterar os dados.
+// ========================= DATABASE — PARSER MANUAL SIMPLES =========================
+// Parser direto, sem System.Uri (que rejeita URLs sem porta explícita).
+// Formato esperado: postgresql://user:pass@host[:port]/database
 string? GetConnectionString()
 {
     var rawUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
@@ -87,27 +84,73 @@ string? GetConnectionString()
 
     try
     {
-        // 🥷 Truque: substitui o scheme pra https temporariamente, só pra parsear
-        var normalizedUrl = rawUrl
-            .Replace("postgresql://", "https://", StringComparison.OrdinalIgnoreCase)
-            .Replace("postgres://", "https://", StringComparison.OrdinalIgnoreCase)
-            .Replace("mysql://", "https://", StringComparison.OrdinalIgnoreCase);
+        // ===== Parsing manual passo a passo =====
+        // Exemplo: postgresql://user:pass@host:5432/dbname
 
-        var uri = new Uri(normalizedUrl);
+        // 1) Remove o scheme (postgresql:// ou postgres:// ou mysql://)
+        var schemeEnd = rawUrl.IndexOf("://", StringComparison.OrdinalIgnoreCase);
+        if (schemeEnd < 0) throw new FormatException("Sem '://' na URL");
+        var withoutScheme = rawUrl.Substring(schemeEnd + 3);
 
-        // Extrai os dados da URI
-        var userInfo = uri.UserInfo.Split(':', 2);
-        var user = Uri.UnescapeDataString(userInfo[0]);
-        var pass = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
-        var host = uri.Host;
-        var port = uri.Port;
-        var db = uri.AbsolutePath.TrimStart('/');
+        // 2) Separa "userInfo@hostInfo/dbAndQuery"
+        var atIndex = withoutScheme.IndexOf('@');
+        if (atIndex < 0) throw new FormatException("Sem '@' separando user:pass de host");
 
-        Console.WriteLine($"✅ GetConnectionString: parse OK — host={host}, db={db}, user={user}, port={(port == -1 ? "(default)" : port.ToString())}");
+        var userInfo = withoutScheme.Substring(0, atIndex);
+        var hostAndDb = withoutScheme.Substring(atIndex + 1);
+
+        // 3) Separa user:pass
+        var userColonIndex = userInfo.IndexOf(':');
+        string user, pass;
+        if (userColonIndex < 0)
+        {
+            user = userInfo;
+            pass = "";
+        }
+        else
+        {
+            user = userInfo.Substring(0, userColonIndex);
+            pass = userInfo.Substring(userColonIndex + 1);
+        }
+        user = Uri.UnescapeDataString(user);
+        pass = Uri.UnescapeDataString(pass);
+
+        // 4) Separa "host[:port]/database[?query]"
+        var slashIndex = hostAndDb.IndexOf('/');
+        if (slashIndex < 0) throw new FormatException("Sem '/' separando host de database");
+
+        var hostPart = hostAndDb.Substring(0, slashIndex);
+        var dbPart = hostAndDb.Substring(slashIndex + 1);
+
+        // 5) Remove eventual ?query=string do nome do database
+        var queryIndex = dbPart.IndexOf('?');
+        if (queryIndex >= 0) dbPart = dbPart.Substring(0, queryIndex);
+        var db = dbPart;
+
+        // 6) Separa host:port (porta é opcional)
+        string host;
+        int port = -1;
+        var hostColonIndex = hostPart.LastIndexOf(':');
+        if (hostColonIndex < 0)
+        {
+            host = hostPart;
+        }
+        else
+        {
+            host = hostPart.Substring(0, hostColonIndex);
+            var portStr = hostPart.Substring(hostColonIndex + 1);
+            if (!int.TryParse(portStr, out port))
+            {
+                Console.WriteLine($"⚠️  Porta inválida ('{portStr}'), usando default");
+                port = -1;
+            }
+        }
+
+        Console.WriteLine($"✅ GetConnectionString: parse OK — host={host}, db={db}, user={user}, port={(port == -1 ? "(default 5432)" : port.ToString())}");
 
         if (isPostgres)
         {
-            // 🥷 Usa NpgsqlConnectionStringBuilder — robusto e nativo
+            // Usa NpgsqlConnectionStringBuilder — robusto e nativo
             var pgBuilder = new NpgsqlConnectionStringBuilder
             {
                 Host = host,
@@ -120,12 +163,13 @@ string? GetConnectionString()
                 CommandTimeout = 15
             };
             if (port != -1) pgBuilder.Port = port;
+            // Se port == -1, Npgsql usa 5432 por padrão automaticamente
 
             return pgBuilder.ToString();
         }
         else
         {
-            // MySQL — connection string manual
+            // MySQL
             var portPart = port != -1 ? $";Port={port}" : "";
             return $"Server={host}{portPart};Database={db};Uid={user};Pwd={pass};Connect Timeout=15";
         }
