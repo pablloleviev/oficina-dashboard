@@ -1,4 +1,4 @@
-using AutoFlow.API.Data;
+﻿using AutoFlow.API.Data;
 using AutoFlow.API.Responses;
 using AutoFlow.API.Services;
 using AutoFlow.API.Validators;
@@ -42,25 +42,62 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ========================= DIAGNÓSTICO DE VARIÁVEIS DE AMBIENTE =========================
-Console.WriteLine("═══════════════════════════════════════════");
-Console.WriteLine("🔍 DIAGNÓSTICO DE VARIÁVEIS DE AMBIENTE");
+// ========================= DIAGNÃ“STICO DE VARIÃVEIS DE AMBIENTE =========================
+Console.WriteLine("â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•");
+Console.WriteLine("ðŸ” DIAGNÃ“STICO DE VARIÃVEIS DE AMBIENTE");
 
 var diagDbUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 var diagConnStr = Environment.GetEnvironmentVariable("CONNECTION_STRING");
 var diagJwt = Environment.GetEnvironmentVariable("JWT_KEY");
 var diagAspEnv = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
 
+// ðŸ”’ FunÃ§Ã£o local pra mascarar senha (mostra tudo MENOS o que estÃ¡ entre ":" e "@")
+static string MascararSenha(string? url)
+{
+    if (string.IsNullOrEmpty(url)) return "(vazio)";
+    
+    // Procura padrÃ£o "://USER:SENHA@HOST"
+    var schemeEnd = url.IndexOf("://", StringComparison.OrdinalIgnoreCase);
+    if (schemeEnd < 0) return url;
+    
+    var afterScheme = url.Substring(schemeEnd + 3);
+    var atIndex = afterScheme.IndexOf('@');
+    if (atIndex < 0)
+    {
+        // SEM @ â€” algo estranho, mostra como estÃ¡ pra debug
+        return url + "  [âš ï¸ SEM '@' DETECTADO!]";
+    }
+    
+    var userInfo = afterScheme.Substring(0, atIndex);
+    var hostInfo = afterScheme.Substring(atIndex + 1);
+    
+    // Separa user:senha
+    var colonIndex = userInfo.IndexOf(':');
+    string userPart;
+    if (colonIndex < 0)
+    {
+        userPart = userInfo + ":(sem senha)";
+    }
+    else
+    {
+        var user = userInfo.Substring(0, colonIndex);
+        userPart = $"{user}:***SENHA***";
+    }
+    
+    var schemePart = url.Substring(0, schemeEnd + 3);
+    return $"{schemePart}{userPart}@{hostInfo}";
+}
+
 Console.WriteLine($"   DATABASE_URL presente?     {!string.IsNullOrEmpty(diagDbUrl)}");
 Console.WriteLine($"   DATABASE_URL tamanho:      {(diagDbUrl?.Length ?? 0)} caracteres");
-Console.WriteLine($"   DATABASE_URL começa com:   {(string.IsNullOrEmpty(diagDbUrl) ? "(vazio)" : diagDbUrl.Substring(0, Math.Min(40, diagDbUrl.Length)) + "...")}");
+Console.WriteLine($"   DATABASE_URL (mascarada):  {MascararSenha(diagDbUrl)}");
 Console.WriteLine($"   CONNECTION_STRING presente? {!string.IsNullOrEmpty(diagConnStr)}");
 Console.WriteLine($"   JWT_KEY presente?          {!string.IsNullOrEmpty(diagJwt)}");
-Console.WriteLine($"   ASPNETCORE_ENVIRONMENT:    {diagAspEnv ?? "(não definido)"}");
-Console.WriteLine("═══════════════════════════════════════════");
+Console.WriteLine($"   ASPNETCORE_ENVIRONMENT:    {diagAspEnv ?? "(nÃ£o definido)"}");
+Console.WriteLine("â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•");
 
-// ========================= DATABASE — PARSER MANUAL SIMPLES =========================
-// Parser direto, sem System.Uri (que rejeita URLs sem porta explícita).
+// ========================= DATABASE â€” PARSER MANUAL SIMPLES =========================
+// Parser direto, sem System.Uri (que rejeita URLs sem porta explÃ­cita).
 // Formato esperado: postgresql://user:pass@host[:port]/database
 string? GetConnectionString()
 {
@@ -69,14 +106,14 @@ string? GetConnectionString()
 
     if (string.IsNullOrEmpty(rawUrl))
     {
-        Console.WriteLine("ℹ️  GetConnectionString: nenhuma env var, usando appsettings.json");
+        Console.WriteLine("â„¹ï¸  GetConnectionString: nenhuma env var, usando appsettings.json");
         return builder.Configuration.GetConnectionString("DefaultConnection");
     }
 
-    // Se NÃO contém "://", já é uma connection string completa
+    // Se NÃƒO contÃ©m "://", jÃ¡ Ã© uma connection string completa
     if (!rawUrl.Contains("://"))
     {
-        Console.WriteLine("ℹ️  GetConnectionString: URL já é connection string, retornando direto");
+        Console.WriteLine("â„¹ï¸  GetConnectionString: URL jÃ¡ Ã© connection string, retornando direto");
         return rawUrl;
     }
 
@@ -127,7 +164,7 @@ string? GetConnectionString()
         if (queryIndex >= 0) dbPart = dbPart.Substring(0, queryIndex);
         var db = dbPart;
 
-        // 6) Separa host:port (porta é opcional)
+        // 6) Separa host:port (porta Ã© opcional)
         string host;
         int port = -1;
         var hostColonIndex = hostPart.LastIndexOf(':');
@@ -141,16 +178,16 @@ string? GetConnectionString()
             var portStr = hostPart.Substring(hostColonIndex + 1);
             if (!int.TryParse(portStr, out port))
             {
-                Console.WriteLine($"⚠️  Porta inválida ('{portStr}'), usando default");
+                Console.WriteLine($"âš ï¸  Porta invÃ¡lida ('{portStr}'), usando default");
                 port = -1;
             }
         }
 
-        Console.WriteLine($"✅ GetConnectionString: parse OK — host={host}, db={db}, user={user}, port={(port == -1 ? "(default 5432)" : port.ToString())}");
+        Console.WriteLine($"âœ… GetConnectionString: parse OK â€” host={host}, db={db}, user={user}, port={(port == -1 ? "(default 5432)" : port.ToString())}");
 
         if (isPostgres)
         {
-            // Usa NpgsqlConnectionStringBuilder — robusto e nativo
+            // Usa NpgsqlConnectionStringBuilder â€” robusto e nativo
             var pgBuilder = new NpgsqlConnectionStringBuilder
             {
                 Host = host,
@@ -163,7 +200,7 @@ string? GetConnectionString()
                 CommandTimeout = 15
             };
             if (port != -1) pgBuilder.Port = port;
-            // Se port == -1, Npgsql usa 5432 por padrão automaticamente
+            // Se port == -1, Npgsql usa 5432 por padrÃ£o automaticamente
 
             return pgBuilder.ToString();
         }
@@ -176,8 +213,8 @@ string? GetConnectionString()
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"⚠️  GetConnectionString: erro ao parsear ({ex.GetType().Name}): {ex.Message}");
-        Console.WriteLine($"⚠️  Retornando URL crua. App provavelmente cairá no SQLite.");
+        Console.WriteLine($"âš ï¸  GetConnectionString: erro ao parsear ({ex.GetType().Name}): {ex.Message}");
+        Console.WriteLine($"âš ï¸  Retornando URL crua. App provavelmente cairÃ¡ no SQLite.");
         return rawUrl;
     }
 }
@@ -193,22 +230,22 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     {
         if (rawUrl.StartsWith("postgres", StringComparison.OrdinalIgnoreCase))
         {
-            Console.WriteLine("📂 DATABASE: Usando PostgreSQL (Produção/Render)");
+            Console.WriteLine("ðŸ“‚ DATABASE: Usando PostgreSQL (ProduÃ§Ã£o/Render)");
             options.UseNpgsql(baseConnString);
         }
         else
         {
-            Console.WriteLine("📂 DATABASE: Usando MySQL (Produção/Render)");
+            Console.WriteLine("ðŸ“‚ DATABASE: Usando MySQL (ProduÃ§Ã£o/Render)");
             options.UseMySql(baseConnString, new MySqlServerVersion(new Version(8, 0, 32)));
         }
     }
     else
     {
-        Console.WriteLine("📂 DATABASE: Usando SQLite (Desenvolvimento)");
+        Console.WriteLine("ðŸ“‚ DATABASE: Usando SQLite (Desenvolvimento)");
         options.UseSqlite("Data Source=autoflow.db");
     }
 
-    // 🔥 SUPRIME o warning chato do EF Core 9 sobre PendingModelChanges
+    // ðŸ”¥ SUPRIME o warning chato do EF Core 9 sobre PendingModelChanges
     options.ConfigureWarnings(warnings =>
         warnings.Ignore(RelationalEventId.PendingModelChangesWarning)
     );
@@ -226,7 +263,7 @@ builder.Services.AddScoped<RelatoriosService>();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<ServicoValidator>();
 
-// ========================= ERROS PADRÃO =========================
+// ========================= ERROS PADRÃƒO =========================
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.InvalidModelStateResponseFactory = context =>
@@ -306,7 +343,7 @@ app.UseSwaggerUI();
 // ========================= PIPELINE =========================
 app.UseCors("AutoFlowCors");
 
-// 🔥 HANDLER GLOBAL DE EXCEÇÕES
+// ðŸ”¥ HANDLER GLOBAL DE EXCEÃ‡Ã•ES
 app.Use(async (context, next) =>
 {
     try
@@ -315,15 +352,15 @@ app.Use(async (context, next) =>
     }
     catch (Exception ex)
     {
-        Console.WriteLine("═══════════════════════════════════════════");
-        Console.WriteLine("❌ EXCEÇÃO NÃO TRATADA NA REQUISIÇÃO");
+        Console.WriteLine("â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•");
+        Console.WriteLine("âŒ EXCEÃ‡ÃƒO NÃƒO TRATADA NA REQUISIÃ‡ÃƒO");
         Console.WriteLine($"   Rota: {context.Request.Method} {context.Request.Path}");
         Console.WriteLine($"   Mensagem: {ex.Message}");
         Console.WriteLine($"   Tipo: {ex.GetType().Name}");
         if (ex.InnerException != null)
             Console.WriteLine($"   Inner: {ex.InnerException.Message}");
         Console.WriteLine($"   Stack:\n{ex.StackTrace}");
-        Console.WriteLine("═══════════════════════════════════════════");
+        Console.WriteLine("â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•");
 
         if (!context.Response.HasStarted)
         {
@@ -349,26 +386,26 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 // ========================= AUTO-MIGRATE + SEED =========================
-Console.WriteLine("🚀 INICIANDO PROCESSO DE MIGRAÇÃO E SEED...");
+Console.WriteLine("ðŸš€ INICIANDO PROCESSO DE MIGRAÃ‡ÃƒO E SEED...");
 using (var scope = app.Services.CreateScope())
 {
     try
     {
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var providerName = context.Database.ProviderName ?? "Unknown";
-        Console.WriteLine($"📂 Provider detectado: {providerName}");
+        Console.WriteLine($"ðŸ“‚ Provider detectado: {providerName}");
 
-        Console.WriteLine("📦 Criando schema via EnsureCreatedAsync...");
+        Console.WriteLine("ðŸ“¦ Criando schema via EnsureCreatedAsync...");
         await context.Database.EnsureCreatedAsync();
-        Console.WriteLine($"✅ SCHEMA CRIADO/VERIFICADO ({providerName}).");
+        Console.WriteLine($"âœ… SCHEMA CRIADO/VERIFICADO ({providerName}).");
 
         var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
         await authService.GarantirAdminPadrao();
-        Console.WriteLine("🚀 SEED DE ADMIN CONCLUÍDO.");
+        Console.WriteLine("ðŸš€ SEED DE ADMIN CONCLUÃDO.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine("❌ ERRO CRÍTICO NO STARTUP: " + ex.Message);
+        Console.WriteLine("âŒ ERRO CRÃTICO NO STARTUP: " + ex.Message);
         if (ex.InnerException != null)
             Console.WriteLine("   -> Detalhes: " + ex.InnerException.Message);
         Console.WriteLine("   -> Stack: " + ex.StackTrace);
