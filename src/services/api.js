@@ -5,22 +5,19 @@ const OS_URL = `${BASE_URL}/OrdemServico`;
 // AUTH
 // ===============================
 export async function login(email, senha) {
-  const res = await fetchWithTimeout(`${BASE_URL}/Auth/login`, {
+  const res = await fetch(`${BASE_URL}/Auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, senha }),
+    body: JSON.stringify({ email: email.trim(), senha: senha.trim() }),
   });
 
-  if (!res.ok) {
+  const data = await res.json();
+
+  if (!res.ok || (!data && !data?.token)) {
     throw new Error("Email ou senha inválidos");
   }
 
-  const data = await res.json();
-  const token = data?.token ?? data?.data?.token;
-
-  if (!token) throw new Error("Email ou senha inválidos");
-
-  return token;
+  return data;
 }
 
 // ===============================
@@ -70,7 +67,6 @@ async function handleResponse(res) {
     throw new Error("Sessão expirada");
   }
 
-  // 204 No Content or empty body — valid success with no payload
   const hasBody = res.status !== 204 && res.headers.get("content-length") !== "0";
   const isJson  = (res.headers.get("content-type") ?? "").includes("application/json");
 
@@ -79,17 +75,14 @@ async function handleResponse(res) {
     try {
       data = await res.json();
     } catch {
-      // Body present but unparseable — only throw if the request failed
       if (!res.ok) throw new Error("Resposta inválida do servidor");
     }
   } else if (hasBody && !isJson && !res.ok) {
-    // Non-JSON error body (HTML error page, plain text, etc.)
     const text = await res.text().catch(() => "");
     console.error("API non-JSON error:", res.status, text.slice(0, 200));
     throw new Error(`Erro ${res.status} do servidor`);
   }
 
-  // ApiResponse<T>: success=false é erro de negócio mesmo em HTTP 200
   if (data?.success === false) {
     const msg = Array.isArray(data.errors) && data.errors.length > 0
       ? data.errors.join(", ")
@@ -265,12 +258,11 @@ export async function getAtividade() {
 // CLIENTES — CREATE / UPDATE / VEÍCULOS
 // ===============================
 export async function createCliente(dto) {
-  // ClienteInputDTO: { nome, telefone, email?, documento?, veiculos:[{marca,modelo,placa,ano}] }
   const payload = {
     nome:      dto.nome,
     telefone:  dto.telefone,
     email:     dto.email     || null,
-    documento: dto.documento || null,   // 400 guard: nunca enviar string vazia
+    documento: dto.documento || null,
     veiculos:  Array.isArray(dto.veiculos) ? dto.veiculos : [],
   };
   return request(`${BASE_URL}/Clientes`, {
