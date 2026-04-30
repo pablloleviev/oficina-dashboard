@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { login } from "../services/api"
 
 
 function Login({ onLogin }) {
@@ -23,28 +24,8 @@ function Login({ onLogin }) {
 
 
     try {
-      const res = await fetch("http://localhost:5182/api/Auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          senha: senha.trim()
-        })
-      })
-
-
-      const data = await res.json()
-      const token = data?.token
-
-
-      if (!res.ok || !token) {
-        throw new Error("Login inválido")
-      }
-
-
-      localStorage.setItem("token", token)
+      const data = await login(email.trim(), senha.trim())
+      localStorage.setItem("token", data.token)
 
 
       onLogin()

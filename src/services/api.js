@@ -1,5 +1,4 @@
-const PROD_URL = "https://autoflow-api-p4ty.onrender.com/api";
-const BASE_URL = import.meta.env.PROD ? PROD_URL : (import.meta.env.VITE_API_URL || "http://localhost:5182/api");
+const BASE_URL = import.meta.env.VITE_API_URL || "https://autoflow-api-p4tv.onrender.com/api";
 const OS_URL = `${BASE_URL}/OrdemServico`;
 
 // ===============================
@@ -94,6 +93,20 @@ async function request(url, options = {}) {
   });
 
   return handleResponse(res);
+}
+
+// ===============================
+// AUTH
+// ===============================
+export async function login(email, senha) {
+  const res = await fetch(`${BASE_URL}/Auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: email.trim(), senha: senha.trim() }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data?.token) throw new Error("Login inválido");
+  return data;
 }
 
 // ===============================
