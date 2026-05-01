@@ -1,4 +1,4 @@
-﻿using AutoFlow.API.Data;
+using AutoFlow.API.Data;
 using AutoFlow.API.Responses;
 using AutoFlow.API.Services;
 using AutoFlow.API.Validators;
@@ -370,8 +370,7 @@ app.Use(async (context, next) =>
                 JsonSerializer.Serialize(new
                 {
                     success = false,
-                    message = "Erro interno do servidor",
-                    debug = ex.Message
+                    message = "Erro interno do servidor"
                 })
             );
         }
