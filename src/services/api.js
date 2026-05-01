@@ -2,25 +2,6 @@ const BASE_URL = import.meta.env.VITE_API_URL || "https://autoflow-api-p4tv.onre
 const OS_URL = `${BASE_URL}/OrdemServico`;
 
 // ===============================
-// AUTH
-// ===============================
-export async function login(email, senha) {
-  const res = await fetch(`${BASE_URL}/Auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: email.trim(), senha: senha.trim() }),
-  });
-
-  const data = await res.json();
-
-  if (!res.ok || (!data && !data?.token)) {
-    throw new Error("Email ou senha inválidos");
-  }
-
-  return data;
-}
-
-// ===============================
 // HEADERS
 // ===============================
 function getHeaders() {
@@ -108,6 +89,20 @@ async function request(url, options = {}) {
   });
 
   return handleResponse(res);
+}
+
+// ===============================
+// AUTH
+// ===============================
+export async function login(email, senha) {
+  const res = await fetch(`${BASE_URL}/Auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: email.trim(), senha: senha.trim() }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data?.token) throw new Error("Login inválido");
+  return data;
 }
 
 // ===============================

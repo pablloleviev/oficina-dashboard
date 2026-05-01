@@ -57,15 +57,10 @@ function OrdensPage({ showToast, role }) {
 
   useEffect(() => {
     if (!clienteId) { setVeiculosLista([]); setVeiculoId(""); return }
-    const id = parseInt(clienteId, 10)
-    console.log("[OrdensPage] clienteId selecionado:", clienteId, "→ id parseado:", id)
-    getVeiculosByCliente(id)
-      .then(v => { setVeiculosLista(v); setVeiculoId("") })
-      .catch(err => {
-        console.error("[OrdensPage] Falha ao buscar veículos do cliente", id, err)
-        setVeiculosLista([])
-      })
-  }, [clienteId])
+    const cliente = clientesLista.find(c => c.id === Number(clienteId))
+    setVeiculosLista(cliente?.veiculos || [])
+    setVeiculoId("")
+  }, [clienteId, clientesLista])
 
   async function salvar() {
     if (!clienteId || !servico || !valor || !meioPagamento) {
@@ -175,7 +170,7 @@ function OrdensPage({ showToast, role }) {
           <select style={inputStyle} value={clienteId} onChange={e => setClienteId(e.target.value)}>
             <option value="">Selecionar cliente...</option>
             {clientesLista?.map(c => (
-              <option key={c.id} value={String(c.id)}>{c.nome}</option>
+              <option key={c.id} value={c.id}>{c.nome}</option>
             ))}
           </select>
 

@@ -1,5 +1,19 @@
-# Logs
-logs
+# ========================= .NET (Backend) =========================
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+appsettings.Development.json
+
+# ========================= Node / React (Frontend) =========================
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vercel/
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,25 +21,25 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Local env — keep secrets out of the repo
-.env
-.env.local
-.env.*.local
-
-# Editor directories and files
-.vscode/*
+# ========================= IDE =========================
+.vs/
+.vscode/
 !.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
+.idea/
+*.swp
+*~
+*.sw?
 *.ntvs*
 *.njsproj
-*.sln
-*.sw?
 
-.vercel
+# ========================= SECRETS (NUNCA SUBIR) =========================
+*.env
+.env.*
+
+# ========================= OS =========================
+Thumbs.db
+.DS_Store
+
+# ========================= PUBLISH =========================
+out/
+publish/
