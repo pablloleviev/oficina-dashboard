@@ -126,7 +126,7 @@ namespace AutoFlow.API.Services
             var admin = new Usuario
             {
                 Email = "admin@autoflow.com",
-                Senha = BCrypt.Net.BCrypt.HashPassword("AutoFlow@123"),
+                Senha = BCrypt.Net.BCrypt.HashPassword("Drakonz@2000"),
                 Role = "Admin"
             };
 
@@ -150,7 +150,7 @@ namespace AutoFlow.API.Services
                 user = new Usuario
                 {
                     Email = email,
-                    Senha = BCrypt.Net.BCrypt.HashPassword("AutoFlow@123"),
+                    Senha = BCrypt.Net.BCrypt.HashPassword("Drakonz@2000"),
                     Role = "Admin"
                 };
 
@@ -160,7 +160,7 @@ namespace AutoFlow.API.Services
             {
                 Console.WriteLine("⚠️ SEED: Admin encontrado. Forçando reset de senha e role...");
 
-                user.Senha = BCrypt.Net.BCrypt.HashPassword("AutoFlow@123");
+                user.Senha = BCrypt.Net.BCrypt.HashPassword("Drakonz@2000");
                 user.Role = "Admin";
                 
                 // 🔥 GARANTE QUE O EF CORE VEJA A MUDANÇA
@@ -174,7 +174,7 @@ namespace AutoFlow.API.Services
             else
                 Console.WriteLine("ℹ️ SEED: Nenhuma alteração pendente (Usuário já estava correto).");
 
-            Console.WriteLine("✅ SEED: Admin garantido -> Email: admin@autoflow.com | Senha: AutoFlow@123");
+            Console.WriteLine("✅ SEED: Admin garantido -> Email: admin@autoflow.com | Senha: [PROTEGIDA]");
 
             return user;
         }
