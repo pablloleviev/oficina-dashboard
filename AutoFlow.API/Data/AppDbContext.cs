@@ -23,6 +23,10 @@ namespace AutoFlow.API.Data
         // 🔥 NOVO: LOG DE AÇÕES
         public DbSet<LogAcao> LogsAcoes { get; set; }
 
+        // ========================= MULTI-TENANT =========================
+        public DbSet<Plano> Planos { get; set; }
+        public DbSet<Oficina> Oficinas { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

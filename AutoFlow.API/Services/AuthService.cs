@@ -81,16 +81,16 @@ namespace AutoFlow.API.Services
         }
 
         // ========================= TOKEN =========================
-        private string GenerateToken(Usuario user)
+        private string GenerateToken(Usuario user, Oficina? oficina = null)
         {
+            var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
+                      ?? _config["Jwt:Key"];
+
             var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_config["Jwt:Key"])
+                Encoding.UTF8.GetBytes(jwtKey!)
             );
 
-            var creds = new SigningCredentials(
-                key,
-                SecurityAlgorithms.HmacSha256
-            );
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new List<Claim>
             {
@@ -99,11 +99,18 @@ namespace AutoFlow.API.Services
                 new Claim(ClaimTypes.Role, user.Role)
             };
 
+            if (oficina != null)
+            {
+                claims.Add(new Claim("OficinaId", oficina.Id.ToString()));
+                claims.Add(new Claim("OficinaSlug", oficina.Slug));
+                claims.Add(new Claim("Plano", oficina.Plano?.Nome ?? "trial"));
+            }
+
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(2),
+                expires: DateTime.UtcNow.AddHours(8),
                 signingCredentials: creds
             );
 

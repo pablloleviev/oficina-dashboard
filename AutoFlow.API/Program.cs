@@ -258,6 +258,8 @@ builder.Services.AddScoped<OrdemServicoService>();
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<FinanceiroService>();
 builder.Services.AddScoped<RelatoriosService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<TenantService>();
 
 // ========================= VALIDATION =========================
 builder.Services.AddFluentValidationAutoValidation();
