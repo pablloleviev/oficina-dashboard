@@ -12,6 +12,7 @@ import OrdensPage     from "./pages/OrdensPage"
 import ClientesPage   from "./pages/ClientesPage"
 import FinanceiroPage from "./pages/FinanceiroPage"
 import RelatoriosPage from "./pages/RelatoriosPage"
+import AdminPage      from "./pages/AdminPage"
 
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem("token"))
@@ -66,6 +67,9 @@ function App() {
             <Route path="/clientes"   element={<ErrorBoundary><ClientesPage   showToast={showToast} /></ErrorBoundary>} />
             <Route path="/financeiro" element={<ErrorBoundary><FinanceiroPage /></ErrorBoundary>} />
             <Route path="/relatorios" element={<ErrorBoundary><RelatoriosPage /></ErrorBoundary>} />
+            {role === "Admin" && (
+              <Route path="/admin" element={<ErrorBoundary><AdminPage /></ErrorBoundary>} />
+            )}
           </Route>
         </Routes>
       </ErrorBoundary>

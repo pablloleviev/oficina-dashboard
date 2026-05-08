@@ -114,6 +114,24 @@ function AppSidebar({ onLogout, role }) {
             {item.label}
           </NavLink>
         ))}
+
+        {role === "Admin" && (
+          <NavLink
+            to="/admin"
+            style={({ isActive }) => ({
+              display: "flex", alignItems: "center", gap: "10px",
+              padding: "9px 10px", borderRadius: "8px",
+              fontSize: "13px", fontWeight: 400,
+              color: isActive ? "var(--text)" : "var(--muted)",
+              background: isActive ? "rgba(59,130,246,0.08)" : "transparent",
+              borderLeft: isActive ? "2px solid var(--accent)" : "2px solid transparent",
+              textDecoration: "none", transition: "all 0.15s",
+              fontFamily: "'DM Sans', sans-serif"
+            })}
+          >
+            ⚙️ Admin
+          </NavLink>
+        )}
       </nav>
 
       {/* FOOTER */}
