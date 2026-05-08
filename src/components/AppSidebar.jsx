@@ -56,7 +56,21 @@ const navItems = [
   }
 ]
 
+function normalizeRole(role) {
+  if (!role) return null
+  if (Array.isArray(role)) return role[0] ?? null
+  if (typeof role === "string") return role
+  return String(role)
+}
+
+function hasRole(role, target) {
+  if (!role) return false
+  if (Array.isArray(role)) return role.includes(target)
+  return role === target
+}
+
 function AppSidebar({ onLogout, role }) {
+  const roleLabel = normalizeRole(role)
   return (
     <aside style={{
       width: "200px", minWidth: "200px",
@@ -115,7 +129,7 @@ function AppSidebar({ onLogout, role }) {
           </NavLink>
         ))}
 
-        {role === "Admin" && (
+        {hasRole(role, "Admin") && (
           <NavLink
             to="/admin"
             style={({ isActive }) => ({
@@ -151,7 +165,7 @@ function AppSidebar({ onLogout, role }) {
           <div>
             <p style={{ fontSize: "12px", fontWeight: 500, color: "var(--text)", fontFamily: "'DM Sans', sans-serif" }}>Admin</p>
             <span style={{ fontSize: "10px", color: "var(--muted)", fontFamily: "'DM Sans', sans-serif" }}>
-              {role || "Administrador"}
+              {roleLabel || "Administrador"}
             </span>
           </div>
         </div>
