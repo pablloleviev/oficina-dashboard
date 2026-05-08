@@ -1,10 +1,11 @@
 import { useState } from "react"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 
-import Login         from "./components/Login"
-import Toast         from "./components/Toast"
-import AppLayout     from "./components/AppLayout"
-import ErrorBoundary from "./components/ErrorBoundary"
+import Login                from "./components/Login"
+import Toast                from "./components/Toast"
+import AppLayout            from "./components/AppLayout"
+import ErrorBoundary        from "./components/ErrorBoundary"
+import CadastroOficinaPage  from "./pages/CadastroOficinaPage"
 
 import DashboardPage  from "./pages/DashboardPage"
 import OrdensPage     from "./pages/OrdensPage"
@@ -41,7 +42,14 @@ function App() {
   }
 
   if (!token) {
-    return <Login onLogin={handleLogin} />
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/cadastro" element={<CadastroOficinaPage />} />
+          <Route path="*" element={<Login onLogin={handleLogin} />} />
+        </Routes>
+      </BrowserRouter>
+    )
   }
 
   const role = getUserRole()

@@ -1,9 +1,10 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { login } from "../services/api"
 
 
 function Login({ onLogin }) {
-
+  const navigate = useNavigate()
 
   const [email, setEmail] = useState("")
   const [senha, setSenha] = useState("")
@@ -83,6 +84,14 @@ function Login({ onLogin }) {
           {loading ? "Entrando..." : "Entrar"}
         </button>
 
+        <p className="text-slate-400 text-xs text-center mt-4">
+          <button
+            onClick={() => navigate("/cadastro")}
+            className="text-blue-400 hover:underline"
+          >
+            Cadastrar minha oficina →
+          </button>
+        </p>
 
       </div>
     </div>
