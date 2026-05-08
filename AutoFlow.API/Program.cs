@@ -1,4 +1,4 @@
-﻿using AutoFlow.API.Data;
+using AutoFlow.API.Data;
 using AutoFlow.API.Responses;
 using AutoFlow.API.Services;
 using AutoFlow.API.Validators;
@@ -258,6 +258,8 @@ builder.Services.AddScoped<OrdemServicoService>();
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<FinanceiroService>();
 builder.Services.AddScoped<RelatoriosService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<TenantService>();
 
 // ========================= VALIDATION =========================
 builder.Services.AddFluentValidationAutoValidation();
@@ -370,8 +372,7 @@ app.Use(async (context, next) =>
                 JsonSerializer.Serialize(new
                 {
                     success = false,
-                    message = "Erro interno do servidor",
-                    debug = ex.Message
+                    message = "Erro interno do servidor"
                 })
             );
         }
