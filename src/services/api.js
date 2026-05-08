@@ -4,11 +4,19 @@ const OS_URL = `${BASE_URL}/OrdemServico`;
 // ===============================
 // HEADERS
 // ===============================
+function getTenant() {
+  const slug = localStorage.getItem("oficinaSlug");
+  if (slug) return slug;
+  const segment = window.location.hostname.split(".")[0];
+  return segment || "";
+}
+
 function getHeaders() {
   const token = localStorage.getItem("token");
 
   return {
     "Content-Type": "application/json",
+    "X-Tenant": getTenant(),
     ...(token && { Authorization: `Bearer ${token}` }),
   };
 }
@@ -97,7 +105,7 @@ async function request(url, options = {}) {
 export async function login(email, senha) {
   const res = await fetch(`${BASE_URL}/Auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getHeaders(),
     body: JSON.stringify({ email: email.trim(), senha: senha.trim() }),
   });
   const data = await res.json();
