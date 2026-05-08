@@ -150,7 +150,7 @@ function FinanceiroPage() {
               },
               {
                 label: "Ordens Pendentes",
-                value: resumo?.ordensPendentes ?? 0,
+                value: Number(resumo?.ordensPendentes ?? 0) || 0,
                 color: "var(--yellow)",
               },
             ].map(s => (

@@ -22,6 +22,11 @@ ChartJS.register(
   Filler
 )
 
+function num(v) {
+  const n = Number(v)
+  return isNaN(n) ? 0 : n
+}
+
 function Dashboard({ servicos = [], kpis = null }) {
 
   function normalizeStatus(status) {
@@ -172,7 +177,7 @@ function Dashboard({ servicos = [], kpis = null }) {
       {temAlerta && (
         <div className="bg-yellow-500/10 border border-yellow-500 text-yellow-400 p-4 rounded-lg text-sm">
           {kpis
-            ? <span>⚠ <b>{kpis.ordensPendentes}</b> ordens pendentes de atendimento</span>
+            ? <span>⚠ <b>{num(kpis.ordensPendentes)}</b> ordens pendentes de atendimento</span>
             : <span>⚠ Você tem <b>R$ {aReceber.toFixed(2)}</b> aguardando faturamento</span>
           }
         </div>
@@ -184,28 +189,28 @@ function Dashboard({ servicos = [], kpis = null }) {
         <div className="card">
           <p className="text-slate-400 text-sm">Receita Total</p>
           <h2 className="text-2xl font-bold text-green-400">
-            R$ {(kpis?.totalReceitas ?? faturamentoTotal).toFixed(2)}
+            R$ {num(kpis?.totalReceitas ?? faturamentoTotal).toFixed(2)}
           </h2>
         </div>
 
         <div className="card">
           <p className="text-slate-400 text-sm">Saldo</p>
-          <h2 className="text-2xl font-bold" style={{ color: (kpis?.saldo ?? aReceber) >= 0 ? "#22c55e" : "#ef4444" }}>
-            R$ {(kpis?.saldo ?? aReceber).toFixed(2)}
+          <h2 className="text-2xl font-bold" style={{ color: num(kpis?.saldo ?? aReceber) >= 0 ? "#22c55e" : "#ef4444" }}>
+            R$ {num(kpis?.saldo ?? aReceber).toFixed(2)}
           </h2>
         </div>
 
         <div className="card">
           <p className="text-slate-400 text-sm">Ticket Médio</p>
           <h2 className="text-2xl font-bold">
-            R$ {(kpis?.ticketMedio ?? ticketMedio).toFixed(2)}
+            R$ {num(kpis?.ticketMedio ?? ticketMedio).toFixed(2)}
           </h2>
         </div>
 
         <div className="card">
           <p className="text-slate-400 text-sm">Total de Clientes</p>
           <h2 className="text-2xl font-bold text-blue-400">
-            {kpis?.totalClientes ?? finalizados.length}
+            {num(kpis?.totalClientes ?? finalizados.length)}
           </h2>
         </div>
 

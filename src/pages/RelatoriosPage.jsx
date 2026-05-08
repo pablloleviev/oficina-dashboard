@@ -180,9 +180,9 @@ function RelatoriosPage() {
         </div>
         <div style={{ display: "flex", gap: "28px" }}>
           {[
-            { value: dashboard?.totalClientes   ?? 0, label: "Clientes",          color: "var(--accent)" },
-            { value: dashboard?.totalVeiculos   ?? 0, label: "Veículos",          color: "var(--green)"  },
-            { value: dashboard?.ordensPendentes ?? 0, label: "Ordens Pendentes",  color: "var(--yellow)" },
+            { value: Number(dashboard?.totalClientes   ?? 0) || 0, label: "Clientes",         color: "var(--accent)" },
+            { value: Number(dashboard?.totalVeiculos   ?? 0) || 0, label: "Veículos",         color: "var(--green)"  },
+            { value: Number(dashboard?.ordensPendentes ?? 0) || 0, label: "Ordens Pendentes", color: "var(--yellow)" },
           ].map(s => (
             <div key={s.label} style={{ textAlign: "right" }}>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: "22px", fontWeight: 700, color: s.color, lineHeight: 1, marginBottom: "4px" }}>

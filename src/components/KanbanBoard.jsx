@@ -123,13 +123,18 @@ function KanbanBoard({ ordens = [], setOrdens, faturar, desfaturar, role }) {
 
     const badge = getBadge()
 
+    function str(v) {
+      if (v == null || typeof v === "object") return ""
+      return String(v)
+    }
+
     return (
       <div className={`bg-slate-800 p-4 rounded-xl space-y-3 shadow border transition-all
         ${isFaturado ? "border-green-500/30 opacity-80" : "border-slate-700 hover:shadow-lg"}
       `}>
 
         <div className="flex justify-between items-center">
-          <div className="font-semibold text-white">{os.cliente}</div>
+          <div className="font-semibold text-white">{str(os.cliente)}</div>
           <div className="flex items-center gap-2">
             {badge && (
               <span className={`text-xs font-bold ${badge.color}`}>
@@ -151,11 +156,11 @@ function KanbanBoard({ ordens = [], setOrdens, faturar, desfaturar, role }) {
         </div>
 
         <div className="text-xs text-slate-400">
-          {os.veiculo} • {os.placa}
+          {str(os.veiculo)} • {str(os.placa)}
         </div>
 
         <div className="text-sm text-slate-300">
-          {os.servico}
+          {str(os.servico)}
         </div>
 
         <div className={`text-lg font-bold ${

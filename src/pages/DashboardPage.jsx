@@ -2,6 +2,11 @@ import { useState, useEffect } from "react"
 import Dashboard from "../components/Dashboard"
 import { getOS, getDashboard, getFinanceiroResumo } from "../services/api"
 
+function num(v) {
+  const n = Number(v)
+  return isNaN(n) ? 0 : n
+}
+
 function DashboardPage({ showToast }) {
   const [ordens, setOrdens] = useState([])
   const [kpis, setKpis] = useState(null)
@@ -33,15 +38,15 @@ function DashboardPage({ showToast }) {
         setOrdens(normalizado)
         setKpis({
           // GET /Relatorios/dashboard → { totalClientes, totalVeiculos, ordensPendentes, ticketMedio }
-          totalClientes:   relatorio?.totalClientes   ?? 0,
-          totalVeiculos:   relatorio?.totalVeiculos   ?? 0,
-          ordensPendentes: relatorio?.ordensPendentes ?? 0,
-          ticketMedio:     relatorio?.ticketMedio     ?? 0,
+          totalClientes:   num(relatorio?.totalClientes),
+          totalVeiculos:   num(relatorio?.totalVeiculos),
+          ordensPendentes: num(relatorio?.ordensPendentes),
+          ticketMedio:     num(relatorio?.ticketMedio),
           // GET /Financeiro/resumo → { totalReceitas, totalDespesas, saldo, ordensPendentes, ordensEmAndamento }
-          totalReceitas:   financeiro?.totalReceitas  ?? 0,
-          totalDespesas:   financeiro?.totalDespesas  ?? 0,
-          saldo:           financeiro?.saldo          ?? 0,
-          ordensEmAndamento: financeiro?.ordensEmAndamento ?? 0,
+          totalReceitas:   num(financeiro?.totalReceitas),
+          totalDespesas:   num(financeiro?.totalDespesas),
+          saldo:           num(financeiro?.saldo),
+          ordensEmAndamento: num(financeiro?.ordensEmAndamento),
         })
       } catch {
         showToast?.("Erro ao carregar dados", "error")
