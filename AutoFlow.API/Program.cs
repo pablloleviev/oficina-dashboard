@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
+using Resend;
 using System.Text;
 using System.Text.Json;
 
@@ -259,6 +260,15 @@ builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<FinanceiroService>();
 builder.Services.AddScoped<RelatoriosService>();
 builder.Services.AddHttpContextAccessor();
+// ========================= RESEND (EMAIL) =========================
+builder.Services.AddOptions();
+builder.Services.AddHttpClient<ResendClient>();
+builder.Services.Configure<ResendClientOptions>(o =>
+{
+    o.ApiToken = Environment.GetEnvironmentVariable("RESEND_API_KEY") ?? "";
+});
+builder.Services.AddTransient<IResend, ResendClient>();
+builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<TenantService>();
 
 // ========================= VALIDATION =========================
