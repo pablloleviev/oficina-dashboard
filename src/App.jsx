@@ -54,6 +54,7 @@ function App() {
   }
 
   const role = getUserRole()
+  const roleLabel = Array.isArray(role) ? role[0] ?? null : (typeof role === "string" ? role : null)
 
   return (
     <BrowserRouter>
@@ -67,7 +68,7 @@ function App() {
             <Route path="/clientes"   element={<ErrorBoundary><ClientesPage   showToast={showToast} /></ErrorBoundary>} />
             <Route path="/financeiro" element={<ErrorBoundary><FinanceiroPage /></ErrorBoundary>} />
             <Route path="/relatorios" element={<ErrorBoundary><RelatoriosPage /></ErrorBoundary>} />
-            {role === "Admin" && (
+            {roleLabel === "Admin" && (
               <Route path="/admin" element={<ErrorBoundary><AdminPage /></ErrorBoundary>} />
             )}
           </Route>
