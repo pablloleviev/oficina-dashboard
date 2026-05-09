@@ -24,8 +24,9 @@ namespace AutoFlow.API.Services
 
             try
             {
-                var smtp = new SmtpClient("smtp.gmail.com", 587)
+                var smtp = new SmtpClient("smtp.gmail.com", 465)
                 {
+                    UseDefaultCredentials = false,
                     Credentials = new NetworkCredential(_gmailUser, _gmailPass),
                     EnableSsl = true
                 };
