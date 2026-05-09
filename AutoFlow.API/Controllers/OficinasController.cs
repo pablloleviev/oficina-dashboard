@@ -75,7 +75,7 @@ namespace AutoFlow.API.Controllers
             {
                 Email = dto.Email,
                 Senha = BCrypt.Net.BCrypt.HashPassword(senhaTemp),
-                Role = "Admin"
+                Role = "OficinaAdmin"
             };
             _context.Usuarios.Add(usuario);
             await _context.SaveChangesAsync();
