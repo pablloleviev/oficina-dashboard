@@ -80,15 +80,12 @@ namespace AutoFlow.API.Controllers
             _context.Usuarios.Add(usuario);
             await _context.SaveChangesAsync();
 
-            // Envia email de boas-vindas (não bloqueia o cadastro se falhar)
-            try
+            // Fire and forget — não bloqueia a resposta
+            _ = Task.Run(async () =>
             {
-                await _emailService.EnviarBoasVindas(dto.Email, dto.Nome, senhaTemp);
-            }
-            catch (Exception emailEx)
-            {
-                Console.WriteLine($"⚠️ Email falhou mas cadastro foi concluído: {emailEx.Message}");
-            }
+                try { await _emailService.EnviarBoasVindas(dto.Email, dto.Nome, senhaTemp); }
+                catch (Exception ex) { Console.WriteLine($"⚠️ Email falhou: {ex.Message}"); }
+            });
 
             return Ok(ApiResponse<object>.SuccessResponse(new { oficina.Id, oficina.Slug, oficina.TrialAte }));
         }
