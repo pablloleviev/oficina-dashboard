@@ -1,6 +1,7 @@
 using AutoFlow.API.Data;
 using AutoFlow.API.Models;
 using AutoFlow.API.Responses;
+using AutoFlow.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,10 +13,14 @@ namespace AutoFlow.API.Controllers
     public class OficinasController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly EmailService _emailService;
+        private readonly AuthService _authService;
 
-        public OficinasController(AppDbContext context)
+        public OficinasController(AppDbContext context, EmailService emailService, AuthService authService)
         {
             _context = context;
+            _emailService = emailService;
+            _authService = authService;
         }
 
         // GET /api/oficinas — lista todas (Admin only)
@@ -61,6 +66,26 @@ namespace AutoFlow.API.Controllers
 
             _context.Oficinas.Add(oficina);
             await _context.SaveChangesAsync();
+
+            // Gera senha temporária
+            var senhaTemp = Guid.NewGuid().ToString("N")[..8].ToUpper();
+
+            // Cria usuário admin da oficina
+            var usuario = new AutoFlow.API.Models.Usuario
+            {
+                Email = dto.Email,
+                Senha = BCrypt.Net.BCrypt.HashPassword(senhaTemp),
+                Role = "OficinaAdmin"
+            };
+            _context.Usuarios.Add(usuario);
+            await _context.SaveChangesAsync();
+
+            // Fire and forget — não bloqueia a resposta
+            _ = Task.Run(async () =>
+            {
+                try { await _emailService.EnviarBoasVindas(dto.Email, dto.Nome, senhaTemp); }
+                catch (Exception ex) { Console.WriteLine($"⚠️ Email falhou: {ex.Message}"); }
+            });
 
             return Ok(ApiResponse<object>.SuccessResponse(new { oficina.Id, oficina.Slug, oficina.TrialAte }));
         }

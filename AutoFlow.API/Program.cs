@@ -259,6 +259,8 @@ builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<FinanceiroService>();
 builder.Services.AddScoped<RelatoriosService>();
 builder.Services.AddHttpContextAccessor();
+// ========================= EMAIL =========================
+builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<TenantService>();
 
 // ========================= VALIDATION =========================

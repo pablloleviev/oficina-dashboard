@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace AutoFlow.API.Models
 {
@@ -20,6 +21,7 @@ namespace AutoFlow.API.Models
         public string? Telefone { get; set; }
         public Guid? PlanoId { get; set; }
         [ForeignKey("PlanoId")]
+        [JsonIgnore] // Evita serialização do objeto Plano completo nas respostas (React Error #31)
         public Plano? Plano { get; set; }
         [MaxLength(20)]
         public string Status { get; set; } = "trial";
