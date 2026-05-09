@@ -129,7 +129,7 @@ function AppSidebar({ onLogout, role }) {
           </NavLink>
         ))}
 
-        {hasRole(role, "Admin") && (
+        {roleLabel === "Admin" && (
           <NavLink
             to="/admin"
             style={({ isActive }) => ({
