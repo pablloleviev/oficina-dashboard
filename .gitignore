@@ -36,6 +36,10 @@ lerna-debug.log*
 *.env
 .env.*
 
+# ========================= DADOS DE TESTE / PII (NUNCA SUBIR) =========================
+payload.json
+db.json
+
 # ========================= OS =========================
 Thumbs.db
 .DS_Store

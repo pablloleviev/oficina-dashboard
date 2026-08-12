@@ -1,5 +1,6 @@
 using AutoFlow.API.Data;
 using AutoFlow.API.DTO;
+using AutoFlow.API.Exceptions;
 using AutoFlow.API.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -54,28 +55,28 @@ namespace AutoFlow.API.Services
         public async Task<OrdemServicoResponseDTO> Create(OrdemServicoDTO dto, int userId)
         {
             if (dto.Valor <= 0)
-                throw new Exception("Valor deve ser maior que zero");
+                throw new BusinessException("Valor deve ser maior que zero");
 
             if (dto.ClienteId == null || dto.ClienteId <= 0)
-                throw new Exception("Cliente é obrigatório");
+                throw new BusinessException("Cliente é obrigatório");
 
             if (string.IsNullOrWhiteSpace(dto.Servico))
-                throw new Exception("Serviço é obrigatório");
+                throw new BusinessException("Serviço é obrigatório");
 
             // Validar existência no banco
             var clienteExiste = await _context.Clientes.AnyAsync(c => c.Id == dto.ClienteId && c.UsuarioId == userId && c.IsActive);
             if (!clienteExiste)
-                throw new Exception("Cliente inválido ou inativo");
+                throw new BusinessException("Cliente inválido ou inativo");
 
             if (dto.VeiculoId != null && dto.VeiculoId > 0)
             {
                 var veiculoExiste = await _context.Veiculos.AnyAsync(v => v.Id == dto.VeiculoId && v.ClienteId == dto.ClienteId && v.IsActive);
                 if (!veiculoExiste)
-                    throw new Exception("Veículo não pertence ao cliente ou é inválido");
+                    throw new BusinessException("Veículo não pertence ao cliente ou é inválido");
             }
             else
             {
-                throw new Exception("Veículo é obrigatório para esta ordem");
+                throw new BusinessException("Veículo é obrigatório para esta ordem");
             }
 
             if (!Enum.TryParse<StatusOrdemServico>(dto.Status, true, out var status))
@@ -118,21 +119,21 @@ namespace AutoFlow.API.Services
 
             // 🔥 BLOQUEIO CRÍTICO
             if (os.Faturado)
-                throw new Exception("Ordem faturada não pode ser alterada");
+                throw new BusinessException("Ordem faturada não pode ser alterada");
 
             if (dto.Valor <= 0)
-                throw new Exception("Valor deve ser maior que zero");
+                throw new BusinessException("Valor deve ser maior que zero");
 
             if (dto.ClienteId != null && dto.ClienteId != os.ClienteId)
             {
                 var clienteExiste = await _context.Clientes.AnyAsync(c => c.Id == dto.ClienteId && c.UsuarioId == userId && c.IsActive);
-                if (!clienteExiste) throw new Exception("Cliente inválido ou inativo");
+                if (!clienteExiste) throw new BusinessException("Cliente inválido ou inativo");
             }
 
             if (dto.VeiculoId != null && dto.VeiculoId != os.VeiculoId && dto.VeiculoId > 0)
             {
                 var veiculoExiste = await _context.Veiculos.AnyAsync(v => v.Id == dto.VeiculoId && v.ClienteId == dto.ClienteId && v.IsActive);
-                if (!veiculoExiste) throw new Exception("Veículo inválido");
+                if (!veiculoExiste) throw new BusinessException("Veículo inválido");
             }
 
             if (!Enum.TryParse<StatusOrdemServico>(dto.Status, true, out var status))
@@ -146,7 +147,7 @@ namespace AutoFlow.API.Services
                 status != StatusOrdemServico.Entregue &&
                 status != StatusOrdemServico.Finalizado)
             {
-                throw new Exception("Só é permitido voltar para Finalizado após entrega");
+                throw new BusinessException("Só é permitido voltar para Finalizado após entrega");
             }
 
             var statusAnterior = os.Status;
@@ -186,16 +187,16 @@ namespace AutoFlow.API.Services
             if (os == null) return null;
 
             if (os.Faturado)
-                throw new Exception("Ordem faturada não pode ter o status alterado");
+                throw new BusinessException("Ordem faturada não pode ter o status alterado");
 
             if (!Enum.TryParse<StatusOrdemServico>(novoStatus, true, out var status))
-                throw new Exception("Status inexistente ou inválido");
+                throw new BusinessException("Status inexistente ou inválido");
 
             var statusAnterior = os.Status;
             
             // 🔥 Impedir retrocessos inválidos (Ex: Entregue -> Pendente)
             if (statusAnterior == StatusOrdemServico.Entregue && status != StatusOrdemServico.Entregue)
-                throw new Exception("Ordem entregue não pode voltar de status (apenas desfaturar se necessário)");
+                throw new BusinessException("Ordem entregue não pode voltar de status (apenas desfaturar se necessário)");
 
             if (statusAnterior == status) return MapToResponse(os);
 
@@ -235,10 +236,10 @@ namespace AutoFlow.API.Services
             if (os == null) return null;
 
             if (os.Status != StatusOrdemServico.Entregue)
-                throw new Exception("Só é possível faturar ordens entregues");
+                throw new BusinessException("Só é possível faturar ordens entregues");
 
             if (os.Faturado)
-                throw new Exception("Ordem já faturada");
+                throw new BusinessException("Ordem já faturada");
 
             os.Faturado = true;
             os.DataFaturamento = DateTime.UtcNow;
@@ -255,17 +256,17 @@ namespace AutoFlow.API.Services
         public async Task<OrdemServicoResponseDTO?> Desfaturar(int id, int userId, string role, string senha)
         {
             if (role != "Admin")
-                throw new Exception("Apenas administradores podem desfaturar");
+                throw new BusinessException("Apenas administradores podem desfaturar");
 
             var usuario = await _context.Usuarios
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (usuario == null)
-                throw new Exception("Usuário inválido");
+                throw new BusinessException("Usuário inválido");
 
             if (!BCrypt.Net.BCrypt.Verify(senha, usuario.Senha))
-                throw new Exception("Senha inválida");
+                throw new BusinessException("Senha inválida");
 
             var ordem = await _context.OrdemServicos
                 .Include(x => x.Cliente)
@@ -276,7 +277,7 @@ namespace AutoFlow.API.Services
                 return null;
 
             if (!ordem.Faturado)
-                throw new Exception("Ordem não está faturada");
+                throw new BusinessException("Ordem não está faturada");
 
             ordem.Faturado = false;
             ordem.DataFaturamento = null;

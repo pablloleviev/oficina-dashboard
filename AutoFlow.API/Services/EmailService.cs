@@ -24,6 +24,12 @@ namespace AutoFlow.API.Services
 
             try
             {
+                // HTML-encode de todo dado dinâmico antes de interpolar no corpo HTML (A05 — injeção de HTML).
+                // Um nome de oficina com <script> ou tags passa a aparecer como texto literal.
+                var nomeOficinaSafe = System.Net.WebUtility.HtmlEncode(nomeOficina);
+                var emailDestinoSafe = System.Net.WebUtility.HtmlEncode(emailDestino);
+                var senhaTemporariaSafe = System.Net.WebUtility.HtmlEncode(senhaTemporaria);
+
                 var smtp = new SmtpClient("smtp.gmail.com", 465)
                 {
                     UseDefaultCredentials = false,
@@ -34,17 +40,17 @@ namespace AutoFlow.API.Services
                 var msg = new MailMessage
                 {
                     From = new MailAddress(_gmailUser, "AutoFlow"),
-                    Subject = $"Bem-vindo ao AutoFlow — {nomeOficina}!",
+                    Subject = $"Bem-vindo ao AutoFlow — {nomeOficinaSafe}!",
                     IsBodyHtml = true,
                     Body = $@"
                     <div style='font-family: sans-serif; max-width: 500px; margin: auto;'>
                         <h2 style='color: #3b82f6;'>🚗 Bem-vindo ao AutoFlow!</h2>
-                        <p>Olá! Sua oficina <strong>{nomeOficina}</strong> foi cadastrada com sucesso.</p>
+                        <p>Olá! Sua oficina <strong>{nomeOficinaSafe}</strong> foi cadastrada com sucesso.</p>
                         <p>Seu período de <strong>trial gratuito de 14 dias</strong> já começou!</p>
                         <hr/>
                         <h3>Seus dados de acesso:</h3>
-                        <p><strong>Email:</strong> {emailDestino}</p>
-                        <p><strong>Senha temporária:</strong> <code style='background:#f1f5f9;padding:4px 8px;border-radius:4px;font-size:16px;'>{senhaTemporaria}</code></p>
+                        <p><strong>Email:</strong> {emailDestinoSafe}</p>
+                        <p><strong>Senha temporária:</strong> <code style='background:#f1f5f9;padding:4px 8px;border-radius:4px;font-size:16px;'>{senhaTemporariaSafe}</code></p>
                         <a href='https://autoflow-gestao.vercel.app' style='display:inline-block;margin-top:16px;padding:12px 24px;background:#3b82f6;color:white;border-radius:8px;text-decoration:none;font-weight:bold;'>
                             Acessar o AutoFlow →
                         </a>

@@ -285,7 +285,17 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
           ?? builder.Configuration["Jwt:Key"];
 
-var key = Encoding.UTF8.GetBytes(jwtKey!);
+// 🔒 FAIL-FAST: sem chave JWT válida a aplicação NÃO sobe.
+// Nunca use um valor default fraco aqui — configure JWT_KEY no ambiente (Render / user-secrets).
+if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
+{
+    throw new InvalidOperationException(
+        "JWT_KEY não configurada ou muito curta (mínimo 32 caracteres / 256 bits). " +
+        "Defina a variável de ambiente JWT_KEY no Render (produção) ou via 'dotnet user-secrets' (desenvolvimento). " +
+        "A aplicação não será iniciada sem uma chave forte.");
+}
+
+var key = Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 .AddJwtBearer(options =>
@@ -338,11 +348,31 @@ builder.Services.AddSwaggerGen(options =>
 // ========================= HEALTH CHECK =========================
 builder.Services.AddHealthChecks();
 
+// ========================= RATE LIMITING =========================
+// Política "login": no máximo 5 tentativas por minuto por IP. 6ª tentativa recebe HTTP 429.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("login", httpContext =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
+
 var app = builder.Build();
 
-// ========================= SWAGGER =========================
-app.UseSwagger();
-app.UseSwaggerUI();
+// ========================= SWAGGER (apenas em desenvolvimento) =========================
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 // ========================= PIPELINE =========================
 app.UseCors("AutoFlowCors");
@@ -368,13 +398,17 @@ app.Use(async (context, next) =>
 
         if (!context.Response.HasStarted)
         {
-            context.Response.StatusCode = 500;
+            // BusinessException carrega mensagem segura e intencional -> 400 com a mensagem.
+            // Qualquer outro erro (técnico) -> 500 genérico, sem vazar detalhe (A02/A10).
+            var isBusiness = ex is AutoFlow.API.Exceptions.BusinessException;
+
+            context.Response.StatusCode = isBusiness ? 400 : 500;
             context.Response.ContentType = "application/json";
             await context.Response.WriteAsync(
                 JsonSerializer.Serialize(new
                 {
                     success = false,
-                    message = "Erro interno do servidor"
+                    message = isBusiness ? ex.Message : "Erro interno do servidor"
                 })
             );
         }
@@ -383,6 +417,10 @@ app.Use(async (context, next) =>
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ========================= RATE LIMITER =========================
+app.UseRateLimiter();
+
 app.MapControllers();
 
 // ========================= HEALTH CHECK ENDPOINT =========================
@@ -403,12 +441,14 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"âœ… SCHEMA CRIADO/VERIFICADO ({providerName}).");
 
         var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
-        await authService.GarantirAdminPadrao();
-        Console.WriteLine("ðŸš€ SEED DE ADMIN CONCLUÃDO.");
+        var adminSeed = await authService.GarantirAdminPadrao();
+        if (adminSeed == null)
+            Console.WriteLine("SEED: admin nao provisionado (ja existe ou ADMIN_SEED_PASSWORD ausente).");
+        Console.WriteLine("🚀 SEED DE ADMIN CONCLUÍDO.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine("âŒ ERRO CRÃTICO NO STARTUP: " + ex.Message);
+        Console.WriteLine("❌ ERRO CRÍTICO NO STARTUP: " + ex.Message);
         if (ex.InnerException != null)
             Console.WriteLine("   -> Detalhes: " + ex.InnerException.Message);
         Console.WriteLine("   -> Stack: " + ex.StackTrace);

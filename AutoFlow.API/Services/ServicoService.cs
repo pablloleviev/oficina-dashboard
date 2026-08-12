@@ -1,5 +1,6 @@
-﻿using AutoFlow.API.Data;
+using AutoFlow.API.Data;
 using AutoFlow.API.DTO;
+using AutoFlow.API.Exceptions;
 using AutoFlow.API.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,13 +28,13 @@ namespace AutoFlow.API.Services
         public async Task<Servico> Create(ServicoDTO dto, int userId)
         {
             if (dto.Valor <= 0)
-                throw new Exception("Valor deve ser maior que zero");
+                throw new BusinessException("Valor deve ser maior que zero");
 
             if (string.IsNullOrWhiteSpace(dto.Cliente))
-                throw new Exception("Cliente é obrigatório");
+                throw new BusinessException("Cliente é obrigatório");
 
             if (string.IsNullOrWhiteSpace(dto.NomeServico))
-                throw new Exception("Nome do serviço é obrigatório");
+                throw new BusinessException("Nome do serviço é obrigatório");
 
             var servico = new Servico
             {
@@ -62,7 +63,7 @@ namespace AutoFlow.API.Services
                 return null;
 
             if (dto.Valor <= 0)
-                throw new Exception("Valor deve ser maior que zero");
+                throw new BusinessException("Valor deve ser maior que zero");
 
             servico.Cliente = dto.Cliente?.Trim();
             servico.Veiculo = dto.Veiculo?.Trim();

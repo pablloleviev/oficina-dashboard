@@ -1,3 +1,4 @@
+using AutoFlow.API.Exceptions;
 using AutoFlow.API.DTO;
 using AutoFlow.API.Services;
 using AutoFlow.API.Responses;
@@ -44,11 +45,18 @@ namespace AutoFlow.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] OrdemServicoDTO dto)
         {
-            var userId = GetUserId();
-
-            var resultado = await _service.Create(dto, userId);
-
-            return Ok(ApiResponse<object>.SuccessResponse(resultado));
+            try
+            {
+                var userId = GetUserId();
+                var resultado = await _service.Create(dto, userId);
+                return Ok(ApiResponse<object>.SuccessResponse(resultado));
+            }
+            catch (BusinessException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(
+                    new List<string> { ex.Message }
+                ));
+            }
         }
 
         // ========================= UPDATE =========================
@@ -68,7 +76,7 @@ namespace AutoFlow.API.Controllers
 
                 return Ok(ApiResponse<object>.SuccessResponse(resultado));
             }
-            catch (Exception ex)
+            catch (BusinessException ex)
             {
                 return BadRequest(ApiResponse<string>.ErrorResponse(
                     new List<string> { ex.Message }
@@ -111,7 +119,7 @@ namespace AutoFlow.API.Controllers
 
                 return Ok(ApiResponse<object>.SuccessResponse(resultado));
             }
-            catch (Exception ex)
+            catch (BusinessException ex)
             {
                 return BadRequest(ApiResponse<string>.ErrorResponse(
                     new List<string> { ex.Message }
@@ -137,7 +145,7 @@ namespace AutoFlow.API.Controllers
 
                 return Ok(ApiResponse<object>.SuccessResponse(resultado));
             }
-            catch (Exception ex)
+            catch (BusinessException ex)
             {
                 return BadRequest(ApiResponse<string>.ErrorResponse(
                     new List<string> { ex.Message }
@@ -172,7 +180,7 @@ namespace AutoFlow.API.Controllers
 
                 return Ok(ApiResponse<object>.SuccessResponse(resultado));
             }
-            catch (Exception ex)
+            catch (BusinessException ex)
             {
                 return BadRequest(ApiResponse<string>.ErrorResponse(
                     new List<string> { ex.Message }

@@ -70,15 +70,27 @@ namespace AutoFlow.API.Controllers
             // Gera senha temporária
             var senhaTemp = Guid.NewGuid().ToString("N")[..8].ToUpper();
 
-            // Cria usuário admin da oficina
             var usuario = new AutoFlow.API.Models.Usuario
             {
                 Email = dto.Email,
                 Senha = BCrypt.Net.BCrypt.HashPassword(senhaTemp),
-                Role = "OficinaAdmin"
+                Role = "OficinaAdmin",
+                OficinaId = oficina.Id
             };
-            _context.Usuarios.Add(usuario);
-            await _context.SaveChangesAsync();
+
+            // 🔒 TRANSAÇÃO: Oficina + Usuário admin persistem juntos ou nada persiste.
+            // Usa ExecutionStrategy para ser compatível com retry do Npgsql (se habilitado no futuro).
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+
+                _context.Oficinas.Add(oficina);
+                _context.Usuarios.Add(usuario);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+            });
 
             // Fire and forget — não bloqueia a resposta
             _ = Task.Run(async () =>

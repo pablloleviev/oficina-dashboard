@@ -1,6 +1,7 @@
-﻿using AutoFlow.API.DTO.Auth;
+using AutoFlow.API.DTO.Auth;
 using AutoFlow.API.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AutoFlow.API.Controllers
 {
@@ -28,14 +29,15 @@ namespace AutoFlow.API.Controllers
 
                 return Ok(new { message = "Usuário registrado com sucesso" });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { error = ex.Message });
+                return StatusCode(500, new { error = "Erro interno do servidor" });
             }
         }
 
         // ========================= LOGIN =========================
         [HttpPost("login")]
+        [EnableRateLimiting("login")]
         public async Task<IActionResult> Login([FromBody] LoginDTO dto)
         {
             try
@@ -47,9 +49,10 @@ namespace AutoFlow.API.Controllers
 
                 return Ok(new { token });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { error = ex.Message });
+                // Não expor detalhe técnico ao cliente (A10/A02). Detalhe fica no handler global/log.
+                return StatusCode(500, new { error = "Erro interno do servidor" });
             }
         }
     }

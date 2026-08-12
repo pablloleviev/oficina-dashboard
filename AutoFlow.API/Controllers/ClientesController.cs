@@ -1,3 +1,4 @@
+using AutoFlow.API.Exceptions;
 using AutoFlow.API.DTO.Clientes;
 using AutoFlow.API.DTO.Relatorios;
 using AutoFlow.API.Services;
@@ -84,7 +85,7 @@ namespace AutoFlow.API.Controllers
                 var resultado = await _service.Create(dto, userId);
                 return Ok(ApiResponse<object>.SuccessResponse(resultado));
             }
-            catch (Exception ex)
+            catch (BusinessException ex)
             {
                 return BadRequest(ApiResponse<string>.ErrorResponse(
                     new List<string> { ex.Message }
@@ -113,7 +114,7 @@ namespace AutoFlow.API.Controllers
 
                 return Ok(ApiResponse<object>.SuccessResponse(resultado));
             }
-            catch (Exception ex)
+            catch (BusinessException ex)
             {
                 return BadRequest(ApiResponse<string>.ErrorResponse(
                     new List<string> { ex.Message }
@@ -162,7 +163,7 @@ namespace AutoFlow.API.Controllers
 
                 return Ok(ApiResponse<object>.SuccessResponse(resultado));
             }
-            catch (Exception ex)
+            catch (BusinessException ex)
             {
                 return BadRequest(ApiResponse<string>.ErrorResponse(
                     new List<string> { ex.Message }

@@ -22,8 +22,35 @@ jobs:
       - name: Instalar dependências
         run: npm install
 
+      - name: Auditoria de dependências (frontend)
+        # Falha o build se houver vulnerabilidade de severidade alta ou crítica.
+        run: npm audit --audit-level=high
+
       - name: Rodar lint
         run: npm run lint
 
       - name: Rodar testes
         run: npm run test
+
+  backend-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restaurar dependências do backend
+        run: dotnet restore AutoFlow.API/AutoFlow.API.csproj
+
+      - name: Auditoria de pacotes NuGet vulneráveis
+        # Lista pacotes vulneráveis; falha o build se algum for encontrado.
+        run: |
+          dotnet list AutoFlow.API/AutoFlow.API.csproj package --vulnerable --include-transitive 2>&1 | tee audit.txt
+          if grep -q -E "Critical|High" audit.txt; then
+            echo "::error::Dependência NuGet vulnerável (High/Critical) encontrada."
+            exit 1
+          fi

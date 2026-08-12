@@ -63,21 +63,39 @@ namespace AutoFlow.API.Services
 
             if (user == null)
             {
-                Console.WriteLine("❌ Usuário não encontrado");
+                // Não logar o e-mail completo (dado pessoal — LGPD/CWE-532). Mascarar.
+                Console.WriteLine($"❌ Falha de login (usuário não encontrado): {MascararEmail(email)}");
                 return null;
             }
 
-            // Verificação de senha (sem logs de debug em produção)
             var senhaValida = BCrypt.Net.BCrypt.Verify(senha, user.Senha);
 
             if (!senhaValida)
             {
-                Console.WriteLine($"❌ Falha de login para: {email}");
+                Console.WriteLine($"❌ Falha de login (senha inválida): {MascararEmail(email)}");
                 return null;
             }
 
-            Console.WriteLine($"✅ Login bem-sucedido: {email}");
+            Console.WriteLine($"✅ Login bem-sucedido: {MascararEmail(email)}");
             return GenerateToken(user);
+        }
+
+        // ========================= MASCARAMENTO DE EMAIL (LGPD) =========================
+        // Ex.: "pabllo@gmail.com" -> "p***@g***". Suficiente para correlacionar tentativas
+        // sem gravar o dado pessoal completo em log.
+        private static string MascararEmail(string? email)
+        {
+            if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
+                return "(email inválido)";
+
+            var partes = email.Split('@');
+            var usuario = partes[0];
+            var dominio = partes[1];
+
+            string MascararParte(string p) =>
+                p.Length <= 1 ? "***" : $"{p[0]}***";
+
+            return $"{MascararParte(usuario)}@{MascararParte(dominio)}";
         }
 
         // ========================= TOKEN =========================
@@ -86,8 +104,12 @@ namespace AutoFlow.API.Services
             var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
                       ?? _config["Jwt:Key"];
 
+            if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
+                throw new InvalidOperationException(
+                    "JWT_KEY não configurada ou muito curta. Defina a variável de ambiente JWT_KEY.");
+
             var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtKey!)
+                Encoding.UTF8.GetBytes(jwtKey)
             );
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -117,71 +139,48 @@ namespace AutoFlow.API.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        // ========================= RESET DEFINITIVO =========================
-        public async Task ResetAcessoDefinitivo()
-        {
-            Console.WriteLine("🧹 INICIANDO LIMPEZA DE USUÁRIOS...");
-            
-            // 1. Limpeza total
-            var todosUsuarios = await _context.Usuarios.ToListAsync();
-            _context.Usuarios.RemoveRange(todosUsuarios);
-            await _context.SaveChangesAsync();
-            
-            Console.WriteLine("✅ TABELA DE USUÁRIOS LIMPA.");
-
-            // 2. Criação do Admin
-            var admin = new Usuario
-            {
-                Email = "admin@autoflow.com",
-                Senha = BCrypt.Net.BCrypt.HashPassword("Drakonz@2000"),
-                Role = "Admin"
-            };
-
-            _context.Usuarios.Add(admin);
-            await _context.SaveChangesAsync();
-
-            Console.WriteLine("USUÁRIO ADMIN CRIADO COM HASH VALIDADO: admin@autoflow.com");
-        }
-
-        public async Task<Usuario> GarantirAdminPadrao()
+        // ========================= SEED ADMIN =========================
+        public async Task<Usuario?> GarantirAdminPadrao()
         {
             var email = "admin@autoflow.com";
 
             var user = await _context.Usuarios
                 .FirstOrDefaultAsync(u => u.Email == email);
 
-            if (user == null)
+            // 🔒 Se o admin JÁ existe, não fazemos NADA com a senha dele.
+            // Nunca resetar a senha de um admin existente a cada boot (era a falha anterior).
+            if (user != null)
             {
-                Console.WriteLine("⚠️ SEED: Admin não existe. Criando novo...");
-
-                user = new Usuario
-                {
-                    Email = email,
-                    Senha = BCrypt.Net.BCrypt.HashPassword("Drakonz@2000"),
-                    Role = "Admin"
-                };
-
-                _context.Usuarios.Add(user);
-            }
-            else
-            {
-                Console.WriteLine("⚠️ SEED: Admin encontrado. Forçando reset de senha e role...");
-
-                user.Senha = BCrypt.Net.BCrypt.HashPassword("Drakonz@2000");
-                user.Role = "Admin";
-                
-                // 🔥 GARANTE QUE O EF CORE VEJA A MUDANÇA
-                _context.Entry(user).State = EntityState.Modified;
+                Console.WriteLine("ℹ️ SEED: Admin já existe. Nenhuma alteração de senha realizada.");
+                return user;
             }
 
-            var rows = await _context.SaveChangesAsync();
-            
-            if (rows > 0)
-                Console.WriteLine($"✅ SEED: Banco de dados atualizado com sucesso ({rows} colunas afetadas).");
-            else
-                Console.WriteLine("ℹ️ SEED: Nenhuma alteração pendente (Usuário já estava correto).");
+            // Só na PRIMEIRA criação: senha vem de variável de ambiente, nunca hardcoded.
+            var senhaInicial = Environment.GetEnvironmentVariable("ADMIN_SEED_PASSWORD");
 
-            Console.WriteLine("✅ SEED: Admin garantido -> Email: admin@autoflow.com | Senha: [PROTEGIDA]");
+            if (string.IsNullOrWhiteSpace(senhaInicial))
+            {
+                // Sem senha configurada = não cria admin com credencial fraca.
+                // Configure ADMIN_SEED_PASSWORD no ambiente para o primeiro boot e remova depois.
+                Console.WriteLine("⚠️ SEED: ADMIN_SEED_PASSWORD não definida. Admin NÃO foi criado. " +
+                                  "Defina a variável no ambiente para provisionar o admin inicial.");
+                return null;
+            }
+
+            Console.WriteLine("⚠️ SEED: Admin não existe. Criando com senha inicial da variável de ambiente...");
+
+            user = new Usuario
+            {
+                Email = email,
+                Senha = BCrypt.Net.BCrypt.HashPassword(senhaInicial),
+                Role = "Admin"
+            };
+
+            _context.Usuarios.Add(user);
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine("✅ SEED: Admin criado -> Email: admin@autoflow.com | Senha: [definida via ambiente]");
+            Console.WriteLine("ℹ️ SEED: Recomendado remover ADMIN_SEED_PASSWORD do ambiente e trocar a senha no primeiro login.");
 
             return user;
         }
