@@ -64,9 +64,6 @@ namespace AutoFlow.API.Controllers
                 SchemaName = $"oficina_{dto.Slug.ToLower().Trim()}"
             };
 
-            _context.Oficinas.Add(oficina);
-            await _context.SaveChangesAsync();
-
             // Gera senha temporária
             var senhaTemp = Guid.NewGuid().ToString("N")[..8].ToUpper();
 

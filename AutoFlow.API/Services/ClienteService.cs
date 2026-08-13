@@ -20,10 +20,11 @@ namespace AutoFlow.API.Services
 
         // ========================= GET ALL =========================
         /// <summary>
-        /// Retorna todos os clientes ATIVOS do usuário, ordenados por nome.
+        /// Retorna todos os clientes ATIVOS da oficina do usuário logado, ordenados por nome.
+        /// O isolamento por oficina é aplicado automaticamente pelo filtro global do EF (HasQueryFilter).
         /// Soft delete: registros com IsActive = false nunca aparecem.
         /// </summary>
-        public async Task<List<ClienteListItemDTO>> GetAll(int userId)
+        public async Task<List<ClienteListItemDTO>> GetAll()
         {
             return await _context.Clientes
                 .Where(c => c.IsActive)

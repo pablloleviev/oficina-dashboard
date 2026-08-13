@@ -33,8 +33,7 @@ namespace AutoFlow.API.Controllers
         [HttpGet]
         public async Task<IActionResult> Get()
         {
-            var userId = GetUserId();
-            var lista = await _service.GetAll(userId);
+            var lista = await _service.GetAll();
             return Ok(ApiResponse<object>.SuccessResponse(lista));
         }
 
