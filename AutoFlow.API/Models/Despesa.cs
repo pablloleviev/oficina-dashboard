@@ -39,6 +39,7 @@ namespace AutoFlow.API.Models
 
         // Mapeamento por usuário igual ao restante do sistema
         public int UsuarioId { get; set; } 
+        public Guid? OficinaId { get; set; } 
         
         public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
     }

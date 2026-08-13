@@ -77,7 +77,16 @@ namespace AutoFlow.API.Services
             }
 
             Console.WriteLine($"✅ Login bem-sucedido: {MascararEmail(email)}");
-            return GenerateToken(user);
+
+            Oficina? oficina = null;
+            if (user.OficinaId.HasValue)
+            {
+                oficina = await _context.Oficinas
+                    .Include(o => o.Plano)
+                    .FirstOrDefaultAsync(o => o.Id == user.OficinaId.Value);
+            }
+
+            return GenerateToken(user, oficina);
         }
 
         // ========================= MASCARAMENTO DE EMAIL (LGPD) =========================

@@ -15,6 +15,9 @@ namespace AutoFlow.API.Models
         // Isolamento por usuário — igual a Servico e OrdemServico
         public int UsuarioId { get; set; }
 
+        // MULTI-TENANT: a qual oficina este registro pertence.
+        public Guid? OficinaId { get; set; }
+
         public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
 
         // ========================= SOFT DELETE =========================

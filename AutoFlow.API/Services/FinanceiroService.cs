@@ -12,10 +12,12 @@ namespace AutoFlow.API.Services
     public class FinanceiroService
     {
         private readonly AppDbContext _context;
+        private readonly TenantProvider _tenant;
 
-        public FinanceiroService(AppDbContext context)
+        public FinanceiroService(AppDbContext context, TenantProvider tenant)
         {
             _context = context;
+            _tenant = tenant;
         }
 
         // ========================= RESUMO FINANCEIRO =========================
@@ -23,22 +25,21 @@ namespace AutoFlow.API.Services
         {
             // Regra: "Entregue ou Finalizada, contadas como Receita"
             var receitas = await _context.OrdemServicos
-                .Where(os => os.UsuarioId == userId && 
-                             (os.Status == StatusOrdemServico.Finalizado || 
-                              os.Status == StatusOrdemServico.Entregue || 
-                              os.Faturado))
+                .Where(os => os.Status == StatusOrdemServico.Finalizado || 
+                             os.Status == StatusOrdemServico.Entregue || 
+                             os.Faturado)
                 .SumAsync(os => os.Valor);
 
             // Regra: Despesas Pagas
             var despesas = await _context.Despesas
-                .Where(d => d.UsuarioId == userId && d.Status == StatusDespesa.Pago)
+                .Where(d => d.Status == StatusDespesa.Pago)
                 .SumAsync(d => d.Valor);
 
             var ordensPendentes = await _context.OrdemServicos
-                .CountAsync(os => os.UsuarioId == userId && os.Status == StatusOrdemServico.Pendente);
+                .CountAsync(os => os.Status == StatusOrdemServico.Pendente);
 
             var ordensEmAndamento = await _context.OrdemServicos
-                .CountAsync(os => os.UsuarioId == userId && os.Status == StatusOrdemServico.EmAndamento);
+                .CountAsync(os => os.Status == StatusOrdemServico.EmAndamento);
 
             return new ResumoFinanceiroDTO
             {
@@ -53,7 +54,6 @@ namespace AutoFlow.API.Services
         public async Task<List<DespesaDTO>> GetDespesas(int userId)
         {
             return await _context.Despesas
-                .Where(d => d.UsuarioId == userId)
                 .OrderByDescending(d => d.DataVencimento)
                 .Select(d => new DespesaDTO
                 {
@@ -93,6 +93,7 @@ namespace AutoFlow.API.Services
                 MeioPagamento = status == StatusDespesa.Pago ? meioPagamento : null,
                 OrdemServicoId = dto.OrdemServicoId,
                 UsuarioId = userId,
+                OficinaId = _tenant.OficinaId,
                 DataCriacao = DateTime.UtcNow
             };
 
@@ -106,7 +107,7 @@ namespace AutoFlow.API.Services
         public async Task<DespesaDTO?> UpdateDespesa(int id, DespesaDTO dto, int userId)
         {
             var despesa = await _context.Despesas
-                .FirstOrDefaultAsync(d => d.Id == id && d.UsuarioId == userId);
+                .FirstOrDefaultAsync(d => d.Id == id);
 
             if (despesa == null) return null;
 
@@ -151,7 +152,7 @@ namespace AutoFlow.API.Services
         public async Task<bool> DeleteDespesa(int id, int userId)
         {
             var despesa = await _context.Despesas
-                .FirstOrDefaultAsync(d => d.Id == id && d.UsuarioId == userId);
+                .FirstOrDefaultAsync(d => d.Id == id);
 
             if (despesa == null) return false;
 
@@ -166,7 +167,7 @@ namespace AutoFlow.API.Services
         {
             var ordens = await _context.OrdemServicos
                 .Include(x => x.Cliente)
-                .Where(os => os.UsuarioId == userId && (os.Status == StatusOrdemServico.Entregue || os.Status == StatusOrdemServico.Finalizado || os.Faturado))
+                .Where(os => os.Status == StatusOrdemServico.Entregue || os.Status == StatusOrdemServico.Finalizado || os.Faturado)
                 .Select(os => new TransacaoDTO
                 {
                     Tipo = "Receita",
@@ -180,7 +181,6 @@ namespace AutoFlow.API.Services
                 }).ToListAsync();
 
             var despesas = await _context.Despesas
-                .Where(d => d.UsuarioId == userId)
                 .Select(d => new TransacaoDTO
                 {
                     Tipo = "Despesa",

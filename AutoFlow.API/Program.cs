@@ -262,6 +262,7 @@ builder.Services.AddHttpContextAccessor();
 // ========================= EMAIL =========================
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<TenantService>();
+builder.Services.AddScoped<TenantProvider>();
 
 // ========================= VALIDATION =========================
 builder.Services.AddFluentValidationAutoValidation();

@@ -9,10 +9,12 @@ namespace AutoFlow.API.Services
     public class OrdemServicoService
     {
         private readonly AppDbContext _context;
+        private readonly TenantProvider _tenant;
 
-        public OrdemServicoService(AppDbContext context)
+        public OrdemServicoService(AppDbContext context, TenantProvider tenant)
         {
             _context = context;
+            _tenant = tenant;
         }
 
         // ========================= LOG =========================
@@ -35,7 +37,6 @@ namespace AutoFlow.API.Services
             var query = _context.OrdemServicos
                 .Include(x => x.Cliente)
                 .Include(x => x.Veiculo)
-                .Where(x => x.UsuarioId == userId)
                 .AsNoTracking();
 
             if (!string.IsNullOrEmpty(status) &&
@@ -64,7 +65,7 @@ namespace AutoFlow.API.Services
                 throw new BusinessException("Serviço é obrigatório");
 
             // Validar existência no banco
-            var clienteExiste = await _context.Clientes.AnyAsync(c => c.Id == dto.ClienteId && c.UsuarioId == userId && c.IsActive);
+            var clienteExiste = await _context.Clientes.AnyAsync(c => c.Id == dto.ClienteId && c.IsActive);
             if (!clienteExiste)
                 throw new BusinessException("Cliente inválido ou inativo");
 
@@ -94,6 +95,7 @@ namespace AutoFlow.API.Services
                 Status = status,
                 MeioPagamento = meioPagamento,
                 UsuarioId = userId,
+                OficinaId = _tenant.OficinaId,
                 DataCriacao = DateTime.UtcNow,
                 DataEntrada = DateTime.UtcNow
             };
@@ -113,7 +115,7 @@ namespace AutoFlow.API.Services
             var os = await _context.OrdemServicos
                 .Include(x => x.Cliente)
                 .Include(x => x.Veiculo)
-                .FirstOrDefaultAsync(x => x.Id == id && x.UsuarioId == userId);
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             if (os == null) return null;
 
@@ -126,7 +128,7 @@ namespace AutoFlow.API.Services
 
             if (dto.ClienteId != null && dto.ClienteId != os.ClienteId)
             {
-                var clienteExiste = await _context.Clientes.AnyAsync(c => c.Id == dto.ClienteId && c.UsuarioId == userId && c.IsActive);
+                var clienteExiste = await _context.Clientes.AnyAsync(c => c.Id == dto.ClienteId && c.IsActive);
                 if (!clienteExiste) throw new BusinessException("Cliente inválido ou inativo");
             }
 
@@ -182,7 +184,7 @@ namespace AutoFlow.API.Services
             var os = await _context.OrdemServicos
                 .Include(x => x.Cliente)
                 .Include(x => x.Veiculo)
-                .FirstOrDefaultAsync(x => x.Id == id && x.UsuarioId == userId);
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             if (os == null) return null;
 
@@ -215,7 +217,7 @@ namespace AutoFlow.API.Services
         public async Task<bool> Delete(int id, int userId)
         {
             var os = await _context.OrdemServicos
-                .FirstOrDefaultAsync(x => x.Id == id && x.UsuarioId == userId);
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             if (os == null) return false;
 
@@ -231,7 +233,7 @@ namespace AutoFlow.API.Services
             var os = await _context.OrdemServicos
                 .Include(x => x.Cliente)
                 .Include(x => x.Veiculo)
-                .FirstOrDefaultAsync(x => x.Id == id && x.UsuarioId == userId);
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             if (os == null) return null;
 
@@ -271,7 +273,7 @@ namespace AutoFlow.API.Services
             var ordem = await _context.OrdemServicos
                 .Include(x => x.Cliente)
                 .Include(x => x.Veiculo)
-                .FirstOrDefaultAsync(x => x.Id == id && x.UsuarioId == userId);
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             if (ordem == null)
                 return null;

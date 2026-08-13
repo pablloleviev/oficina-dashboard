@@ -1,12 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using AutoFlow.API.Models;
+using AutoFlow.API.Services;
 
 namespace AutoFlow.API.Data
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        private readonly TenantProvider _tenant;
+
+        public AppDbContext(DbContextOptions<AppDbContext> options, TenantProvider? tenant = null) : base(options)
         {
+            _tenant = tenant ?? new TenantProvider();
         }
 
         public DbSet<Servico> Servicos { get; set; }
@@ -30,6 +34,19 @@ namespace AutoFlow.API.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // ========================= MULTI-TENANT GLOBAL QUERY FILTERS =========================
+            modelBuilder.Entity<Cliente>().HasQueryFilter(c =>
+                _tenant.IsSuperAdmin ||
+                (_tenant.OficinaId != null && c.OficinaId == _tenant.OficinaId));
+
+            modelBuilder.Entity<OrdemServico>().HasQueryFilter(o =>
+                _tenant.IsSuperAdmin ||
+                (_tenant.OficinaId != null && o.OficinaId == _tenant.OficinaId));
+
+            modelBuilder.Entity<Despesa>().HasQueryFilter(d =>
+                _tenant.IsSuperAdmin ||
+                (_tenant.OficinaId != null && d.OficinaId == _tenant.OficinaId));
 
             // ========================= PRECISÃO MONETÁRIA =========================
             modelBuilder.Entity<Servico>()

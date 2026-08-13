@@ -24,8 +24,7 @@ namespace AutoFlow.API.Services
             var dataCorte = DateTime.UtcNow.AddMonths(-12);
 
             var ordens = await _context.OrdemServicos
-                .Where(os => os.UsuarioId == userId && 
-                             os.DataCriacao >= dataCorte &&
+                .Where(os => os.DataCriacao >= dataCorte &&
                              (os.Status == StatusOrdemServico.Entregue || 
                               os.Status == StatusOrdemServico.Finalizado || 
                               os.Faturado))
@@ -48,8 +47,7 @@ namespace AutoFlow.API.Services
         public async Task<List<TopClienteDTO>> GetTopClientes(int userId, int limite = 5)
         {
             var ordens = await _context.OrdemServicos
-                .Where(os => os.UsuarioId == userId && 
-                             (os.Status == StatusOrdemServico.Entregue || 
+                .Where(os => (os.Status == StatusOrdemServico.Entregue || 
                               os.Status == StatusOrdemServico.Finalizado || 
                               os.Faturado))
                 .Select(os => new { os.ClienteId, Nome = (os.Cliente != null ? os.Cliente.Nome : "Cliente Desconhecido"), os.Valor })
@@ -74,8 +72,7 @@ namespace AutoFlow.API.Services
         public async Task<List<TopServicoDTO>> GetTopServicos(int userId, int limite = 5)
         {
             var ordens = await _context.OrdemServicos
-                .Where(os => os.UsuarioId == userId && 
-                             (os.Status == StatusOrdemServico.Entregue || 
+                .Where(os => (os.Status == StatusOrdemServico.Entregue || 
                               os.Status == StatusOrdemServico.Finalizado || 
                               os.Faturado))
                 .Select(os => new { os.Servico, os.Valor })
@@ -101,7 +98,7 @@ namespace AutoFlow.API.Services
             var dataCorte = DateTime.UtcNow.AddDays(-diasBack);
 
             var ordens = await _context.OrdemServicos
-                .Where(os => os.UsuarioId == userId && os.DataCriacao >= dataCorte)
+                .Where(os => os.DataCriacao >= dataCorte)
                 .Select(os => new { os.DataCriacao })
                 .ToListAsync();
 
@@ -122,20 +119,19 @@ namespace AutoFlow.API.Services
         {
             // Clientes Ativos
             var totalClientes = await _context.Clientes
-                .CountAsync(c => c.UsuarioId == userId && c.IsActive);
+                .CountAsync(c => c.IsActive);
 
             // Veículos Vinculados
             var totalVeiculos = await _context.Veiculos
-                .CountAsync(v => v.IsActive && _context.Clientes.Any(c => c.Id == v.ClienteId && c.UsuarioId == userId));
+                .CountAsync(v => v.IsActive && _context.Clientes.Any(c => c.Id == v.ClienteId));
 
             // Ordens Pendentes (Não faturadas/Finalizadas)
             var ordensPendentes = await _context.OrdemServicos
-                .CountAsync(os => os.UsuarioId == userId && os.Status == StatusOrdemServico.Pendente);
+                .CountAsync(os => os.Status == StatusOrdemServico.Pendente);
 
             // Ticket Médio: Soma OS Pagas / Clientes que pagaram
             var dadosPagos = await _context.OrdemServicos
-                .Where(os => os.UsuarioId == userId && 
-                             (os.Status == StatusOrdemServico.Entregue || 
+                .Where(os => (os.Status == StatusOrdemServico.Entregue || 
                               os.Status == StatusOrdemServico.Finalizado || 
                               os.Faturado))
                 .Select(os => new { os.ClienteId, os.Valor })

@@ -23,6 +23,7 @@ public class OrdemServico
     public DateTime? DataConclusao { get; set; }
 
     public int UsuarioId { get; set; }
+    public Guid? OficinaId { get; set; }
 
     public bool Faturado { get; set; } = false;
     public DateTime? DataFaturamento { get; set; }

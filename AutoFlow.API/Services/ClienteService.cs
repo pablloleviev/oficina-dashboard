@@ -10,10 +10,12 @@ namespace AutoFlow.API.Services
     public class ClienteService
     {
         private readonly AppDbContext _context;
+        private readonly TenantProvider _tenant;
 
-        public ClienteService(AppDbContext context)
+        public ClienteService(AppDbContext context, TenantProvider tenant)
         {
             _context = context;
+            _tenant = tenant;
         }
 
         // ========================= GET ALL =========================
@@ -24,7 +26,7 @@ namespace AutoFlow.API.Services
         public async Task<List<ClienteListItemDTO>> GetAll(int userId)
         {
             return await _context.Clientes
-                .Where(c => c.UsuarioId == userId && c.IsActive)
+                .Where(c => c.IsActive)
                 .OrderBy(c => c.Nome)
                 .Select(c => new ClienteListItemDTO
                 {
@@ -59,7 +61,7 @@ namespace AutoFlow.API.Services
             var cliente = await _context.Clientes
                 .Include(c => c.Veiculos.Where(v => v.IsActive))
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Id == id && c.UsuarioId == userId && c.IsActive);
+                .FirstOrDefaultAsync(c => c.Id == id && c.IsActive);
 
             if (cliente == null) return null;
 
@@ -84,6 +86,7 @@ namespace AutoFlow.API.Services
                 Email = dto.Email?.Trim(),
                 Documento = dto.Documento?.Trim(),
                 UsuarioId = userId,
+                OficinaId = _tenant.OficinaId,
                 CriadoEm = DateTime.UtcNow,
                 IsActive = true,
                 Veiculos = (dto.Veiculos ?? new List<VeiculoDTO>()).Select(v => new Veiculo
@@ -107,7 +110,7 @@ namespace AutoFlow.API.Services
         {
             var cliente = await _context.Clientes
                 .Include(c => c.Veiculos.Where(v => v.IsActive))
-                .FirstOrDefaultAsync(c => c.Id == id && c.UsuarioId == userId && c.IsActive);
+                .FirstOrDefaultAsync(c => c.Id == id && c.IsActive);
 
             if (cliente == null) return null;
 
@@ -172,7 +175,7 @@ namespace AutoFlow.API.Services
         {
             var cliente = await _context.Clientes
                 .Include(c => c.Veiculos)
-                .FirstOrDefaultAsync(c => c.Id == id && c.UsuarioId == userId && c.IsActive);
+                .FirstOrDefaultAsync(c => c.Id == id && c.IsActive);
 
             if (cliente == null) return false;
 
@@ -194,7 +197,7 @@ namespace AutoFlow.API.Services
         {
             var cliente = await _context.Clientes
                 .Include(c => c.Veiculos)
-                .FirstOrDefaultAsync(c => c.Id == clienteId && c.UsuarioId == userId && c.IsActive);
+                .FirstOrDefaultAsync(c => c.Id == clienteId && c.IsActive);
 
             if (cliente == null) return null;
 
